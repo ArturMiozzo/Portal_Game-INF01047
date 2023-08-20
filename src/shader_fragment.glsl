@@ -121,8 +121,8 @@ void main()
     else if ( object_id == PLANE )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
+        U = texcoords.x*5 - floor(texcoords.x*5);
+        V = texcoords.y*5 - floor(texcoords.y*5);
     }
 
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
@@ -131,7 +131,7 @@ void main()
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    color = Kd0 * (lambert + 0.01);
+    color = Kd0;// * (lambert + 0.01);
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
