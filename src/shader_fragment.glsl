@@ -34,7 +34,7 @@ uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
-out vec4 color;
+out vec3 color;
 
 // Constantes
 #define M_PI   3.14159265358979323846
@@ -72,7 +72,7 @@ void main()
     {
         // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
         // projeção esférica EM COORDENADAS DO MODELO. Utilize como referência
-        // o slides 134-150 do documento Aula_20_Mapeamento_de_Texturas.pdf.
+        // o slide 144 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
         // A esfera que define a projeção deve estar centrada na posição
         // "bbox_center" definida abaixo.
 
@@ -85,19 +85,26 @@ void main()
 
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
-        U = 0.0;
-        V = 0.0;
+        vec4 plinha = bbox_center + (position_model - bbox_center) / length(position_model - bbox_center);
+
+        vec4 pvector = plinha - bbox_center;
+
+
+
+        U = ((atan(pvector.x,pvector.z)) + M_PI)/ (2 * M_PI);
+        V = ((asin(pvector.y)) + M_PI_2) / M_PI;
     }
     else if ( object_id == BUNNY )
     {
         // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
         // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência
-        // o slides 99-104 do documento Aula_20_Mapeamento_de_Texturas.pdf,
+        // o slide 111 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf",
         // e também use as variáveis min*/max* definidas abaixo para normalizar
         // as coordenadas de textura U e V dentro do intervalo [0,1]. Para
         // tanto, veja por exemplo o mapeamento da variável 'p_v' utilizando
-        // 'h' no slides 158-160 do documento Aula_20_Mapeamento_de_Texturas.pdf.
+        // 'h' no slide 154 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
         // Veja também a Questão 4 do Questionário 4 no Moodle.
+
 
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -108,8 +115,8 @@ void main()
         float minz = bbox_min.z;
         float maxz = bbox_max.z;
 
-        U = 0.0;
-        V = 0.0;
+        U = (position_model.x - minx) / (maxx - minx);
+        V = (position_model.y - miny) / (maxy - miny);
     }
     else if ( object_id == PLANE )
     {
@@ -124,24 +131,10 @@ void main()
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    color.rgb = Kd0 * (lambert + 0.01);
-
-    // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
-    // necessário:
-    // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o
-    //    desenho dos objetos transparentes, com os comandos abaixo no código C++:
-    //      glEnable(GL_BLEND);
-    //      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // 2) Realizar o desenho de todos objetos transparentes *após* ter desenhado
-    //    todos os objetos opacos; e
-    // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
-    //    suas distâncias para a câmera (desenhando primeiro objetos
-    //    transparentes que estão mais longe da câmera).
-    // Alpha default = 1 = 100% opaco = 0% transparente
-    color.a = 1;
+    color = Kd0 * (lambert + 0.01);
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
-} 
+    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+}
 
