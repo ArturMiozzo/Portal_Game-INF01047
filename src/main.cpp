@@ -391,7 +391,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -50.0f; // Posição do "far plane"
+        float farplane  = -100.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
         #define BUNNY  1
         #define PLANE  2
 
-        float width = 10.0f;
+        float width = 50.0f;
         float height = 5.0f;
 
         // Desenhamos o plano do chão
