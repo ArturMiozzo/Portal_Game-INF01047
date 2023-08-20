@@ -307,20 +307,24 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/floor.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/wall.jpg");      // TextureImage1
+    LoadTextureImage("../../data/hard_wall.jpg");      // TextureImage2
+
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
-    BuildTrianglesAndAddToVirtualScene(&spheremodel);
+    ObjModel floormodel("../../data/floor.obj");
+    ComputeNormals(&floormodel);
+    BuildTrianglesAndAddToVirtualScene(&floormodel);
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
+    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    ObjModel wallmodel("../../data/wall.obj");
+    ComputeNormals(&wallmodel);
+    BuildTrianglesAndAddToVirtualScene(&wallmodel);
 
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
-    BuildTrianglesAndAddToVirtualScene(&planemodel);
+    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    ObjModel roofmodel("../../data/roof.obj");
+    ComputeNormals(&roofmodel);
+    BuildTrianglesAndAddToVirtualScene(&roofmodel);
 
     if ( argc > 1 )
     {
@@ -422,9 +426,9 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define SPHERE 0
-        #define BUNNY  1
-        #define PLANE  2
+        #define FLOOR 0
+        #define WALL  1
+        #define ROOF  2
 
         float width = 50.0f;
         float height = 5.0f;
@@ -432,38 +436,38 @@ int main(int argc, char* argv[])
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, FLOOR);
+        DrawVirtualObject("the_floor");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(-width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,height/2,width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(-1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,3*height/2,0.0f) * Matrix_Scale(width, height/2, width) * Matrix_Rotate(3.141592f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        glUniform1i(g_object_id_uniform, ROOF);
+        DrawVirtualObject("the_roof");
 
         /*
         // Desenhamos o modelo do coelho
@@ -648,9 +652,9 @@ void LoadShadersFromFiles()
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureFloor"), 0);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureWall"), 1);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureRoof"), 2);
     glUseProgram(0);
 }
 
