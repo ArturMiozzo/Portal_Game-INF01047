@@ -349,6 +349,8 @@ int main(int argc, char* argv[])
     float r = g_CameraDistance;
     glm::vec4 camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
     {
         // Aqui executamos as operações de renderização
@@ -382,7 +384,7 @@ int main(int argc, char* argv[])
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
 
-        PrintVector(camera_position_c);
+
         //glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         //glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_view_vector = glm::vec4(-x,-y,-z,0.0f);
@@ -1128,15 +1130,80 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
+    printf("x:%f y:%f\n", xpos, ypos);
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
+    float dx, dy;
+    if(xpos >= 799 || xpos <= 0)
+    {
+        printf("entrei");
+        if(ypos >= 599 || ypos <= 0)
+        {
+            glfwSetCursorPos(window, 400, 300);
+            dx = 0;
+            dy = 0;
+            g_LastCursorPosX = 400;
+            g_LastCursorPosY = 300;
 
-    if (g_LeftMouseButtonPressed)
+        }
+        else
+        {
+            glfwSetCursorPos(window, 400, ypos);
+            dx = 0;
+            g_LastCursorPosX = 400;
+            g_LastCursorPosY = ypos;
+        }
+
+    }
+    else if(ypos >= 599 || ypos <= 0)
+    {
+
+            glfwSetCursorPos(window, xpos, 300);
+            dy = 0;
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = 300;
+
+    }
+    else
+    {
+        dx = xpos - g_LastCursorPosX;
+        dy = ypos - g_LastCursorPosY;
+
+
+    // Atualizamos as variáveis globais para armazenar a posição atual do
+    // cursor como sendo a última posição conhecida do cursor.
+        g_LastCursorPosX = xpos;
+        g_LastCursorPosY = ypos;
+    }
+
+
+    // Atualizamos parâmetros da câmera com os deslocamentos
+    g_CameraTheta -= 0.01f*dx;
+    g_CameraPhi   += 0.01f*dy;
+
+    // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+    float phimax = 3.141592f/2;
+    float phimin = -phimax;
+
+    if (g_CameraPhi > phimax)
+        g_CameraPhi = phimax;
+
+    if (g_CameraPhi < phimin)
+        g_CameraPhi = phimin;
+
+
+
+
+    /*double centerX = 800 / 2.0;
+    double centerY = 600 / 2.0;
+    glfwSetCursorPos(window, centerX, centerY);*/
+    /*if (g_LeftMouseButtonPressed)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
 
@@ -1158,9 +1225,9 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
-    }
+    }*/
 
-    if (g_RightMouseButtonPressed)
+    /*if (g_RightMouseButtonPressed)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
@@ -1190,7 +1257,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
-    }
+    }*/
 }
 
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
