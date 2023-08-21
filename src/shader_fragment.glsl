@@ -22,6 +22,8 @@ uniform mat4 projection;
 #define FLOOR 0
 #define WALL  1
 #define ROOF  2
+#define PORTALGUN 3
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -32,6 +34,7 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureFloor;
 uniform sampler2D TextureWall;
 uniform sampler2D TextureRoof;
+uniform sampler2D TexturePortalGun;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -93,6 +96,23 @@ void main()
         V = texcoords.y*5 - floor(texcoords.y*5);
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TextureRoof, vec2(U,V)).rgb;
+    }
+    else if ( object_id == PORTALGUN )
+    {
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x-minx)/(maxx-minx);
+        V = (position_model.y-miny)/(maxy-miny);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
     }
 
     // Equação de Iluminação

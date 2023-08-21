@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/floor.jpg");      // TextureImage0
     LoadTextureImage("../../data/wall.jpg");      // TextureImage1
     LoadTextureImage("../../data/hard_wall.jpg");      // TextureImage2
+    LoadTextureImage("../../data/portalgun_col.jpg");      // TextureImage2
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -316,15 +317,17 @@ int main(int argc, char* argv[])
     ComputeNormals(&floormodel);
     BuildTrianglesAndAddToVirtualScene(&floormodel);
 
-    // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel wallmodel("../../data/wall.obj");
     ComputeNormals(&wallmodel);
     BuildTrianglesAndAddToVirtualScene(&wallmodel);
 
-    // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel roofmodel("../../data/roof.obj");
     ComputeNormals(&roofmodel);
     BuildTrianglesAndAddToVirtualScene(&roofmodel);
+
+    ObjModel gunmodel("../../data/Portal Gun.obj");
+    ComputeNormals(&gunmodel);
+    BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
     if ( argc > 1 )
     {
@@ -429,9 +432,16 @@ int main(int argc, char* argv[])
         #define FLOOR 0
         #define WALL  1
         #define ROOF  2
+        #define PORTALGUN  3
 
         float width = 50.0f;
         float height = 5.0f;
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(camera_position_c.x+0.2,camera_position_c.y-0.15,camera_position_c.z-0.7) * Matrix_Scale(0.25f, 0.25f, 0.25f) * Matrix_Rotate(3.141592f / 4.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PORTALGUN);
+        DrawVirtualObject("PortalGun");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
@@ -655,6 +665,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureFloor"), 0);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureWall"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureRoof"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUseProgram(0);
 }
 
