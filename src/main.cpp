@@ -48,6 +48,8 @@
 #include "utils.h"
 #include "matrices.h"
 
+
+
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
 struct ObjModel
@@ -150,7 +152,7 @@ void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+//void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -184,6 +186,12 @@ float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
+// botoes w a s d
+bool b_forward = false;
+bool b_right = false;
+bool b_back = false;
+bool b_left = false;
+float speed = 0.03;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -269,7 +277,7 @@ int main(int argc, char* argv[])
     // ... ou movimentar o cursor do mouse em cima da janela ...
     glfwSetCursorPosCallback(window, CursorPosCallback);
     // ... ou rolar a "rodinha" do mouse.
-    glfwSetScrollCallback(window, ScrollCallback);
+    //glfwSetScrollCallback(window, ScrollCallback);
 
     // Indicamos que as chamadas OpenGL deverão renderizar nesta janela
     glfwMakeContextCurrent(window);
@@ -298,21 +306,28 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/floor.jpg");      // TextureImage0
+    LoadTextureImage("../../data/wall.jpg");      // TextureImage1
+    LoadTextureImage("../../data/hard_wall.jpg");      // TextureImage2
+    LoadTextureImage("../../data/portalgun_col.jpg");      // TextureImage2
+
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
-    BuildTrianglesAndAddToVirtualScene(&spheremodel);
+    ObjModel floormodel("../../data/floor.obj");
+    ComputeNormals(&floormodel);
+    BuildTrianglesAndAddToVirtualScene(&floormodel);
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
+    ObjModel wallmodel("../../data/wall.obj");
+    ComputeNormals(&wallmodel);
+    BuildTrianglesAndAddToVirtualScene(&wallmodel);
 
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
-    BuildTrianglesAndAddToVirtualScene(&planemodel);
+    ObjModel roofmodel("../../data/roof.obj");
+    ComputeNormals(&roofmodel);
+    BuildTrianglesAndAddToVirtualScene(&roofmodel);
+
+    ObjModel gunmodel("../../data/Portal Gun.obj");
+    ComputeNormals(&gunmodel);
+    BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
     if ( argc > 1 )
     {
@@ -331,7 +346,11 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    float r = g_CameraDistance;
+    glm::vec4 camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
     {
         // Aqui executamos as operações de renderização
@@ -356,21 +375,24 @@ int main(int argc, char* argv[])
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
-        float r = g_CameraDistance;
+
         float y = r*sin(g_CameraPhi);
         float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
         float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
+
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+
+
+        //glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        //glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+        glm::vec4 camera_view_vector = glm::vec4(-x,-y,-z,0.0f);
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed);
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
@@ -378,7 +400,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+        float farplane  = -100.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -409,9 +431,64 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define SPHERE 0
-        #define BUNNY  1
-        #define PLANE  2
+        #define FLOOR 0
+        #define WALL  1
+        #define ROOF  2
+        #define PORTALGUN  3
+
+        float width = 50.0f;
+        float height = 5.0f;
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(camera_position_c.x+0.2,camera_position_c.y-0.15,camera_position_c.z-0.7) * Matrix_Scale(0.25f, 0.25f, 0.25f) * Matrix_Rotate(3.141592f / 4.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PORTALGUN);
+        DrawVirtualObject("PortalGun");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FLOOR);
+        DrawVirtualObject("the_floor");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(-width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f,height/2,width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(-1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f,3*height/2,0.0f) * Matrix_Scale(width, height/2, width) * Matrix_Rotate(3.141592f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ROOF);
+        DrawVirtualObject("the_roof");
+
+        /*
+        // Desenhamos o modelo do coelho
+        model = Matrix_Translate(1.0f,0.0f,0.0f)
+              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, BUNNY);
+        DrawVirtualObject("the_bunny");
+
 
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -422,18 +499,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, SPHERE);
         DrawVirtualObject("the_sphere");
 
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+        */
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -598,9 +664,10 @@ void LoadShadersFromFiles()
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureFloor"), 0);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureWall"), 1);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureRoof"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUseProgram(0);
 }
 
@@ -972,7 +1039,7 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
         fprintf(stderr, "%s", output.c_str());
     }
 
-    // Os "Shader Objects" podem ser marcados para deleção após serem linkados 
+    // Os "Shader Objects" podem ser marcados para deleção após serem linkados
     glDeleteShader(vertex_shader_id);
     glDeleteShader(fragment_shader_id);
 
@@ -1063,48 +1130,113 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
+    printf("x:%f y:%f\n", xpos, ypos);
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
-
-    if (g_LeftMouseButtonPressed)
+    float dx, dy;
+    if(xpos >= 799 || xpos <= 0)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-    
-        // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
-        g_CameraPhi   += 0.01f*dy;
-    
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax;
-    
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
-    
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
-    
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
+        printf("entrei");
+        if(ypos >= 599 || ypos <= 0)
+        {
+            glfwSetCursorPos(window, 400, 300);
+            dx = 0;
+            dy = 0;
+            g_LastCursorPosX = 400;
+            g_LastCursorPosY = 300;
+
+        }
+        else
+        {
+            glfwSetCursorPos(window, 400, ypos);
+            dx = 0;
+            g_LastCursorPosX = 400;
+            g_LastCursorPosY = ypos;
+        }
+
+    }
+    else if(ypos >= 599 || ypos <= 0)
+    {
+
+            glfwSetCursorPos(window, xpos, 300);
+            dy = 0;
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = 300;
+
+    }
+    else
+    {
+        dx = xpos - g_LastCursorPosX;
+        dy = ypos - g_LastCursorPosY;
+
+
+    // Atualizamos as variáveis globais para armazenar a posição atual do
+    // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
 
-    if (g_RightMouseButtonPressed)
+
+    // Atualizamos parâmetros da câmera com os deslocamentos
+    g_CameraTheta -= 0.01f*dx;
+    g_CameraPhi   += 0.01f*dy;
+
+    // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+    float phimax = 3.141592f/2;
+    float phimin = -phimax;
+
+    if (g_CameraPhi > phimax)
+        g_CameraPhi = phimax;
+
+    if (g_CameraPhi < phimin)
+        g_CameraPhi = phimin;
+
+
+
+
+    /*double centerX = 800 / 2.0;
+    double centerY = 600 / 2.0;
+    glfwSetCursorPos(window, centerX, centerY);*/
+    /*if (g_LeftMouseButtonPressed)
+    {
+        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+
+        float dx = xpos - g_LastCursorPosX;
+        float dy = ypos - g_LastCursorPosY;
+
+        // Atualizamos parâmetros da câmera com os deslocamentos
+        g_CameraTheta -= 0.01f*dx;
+        g_CameraPhi   += 0.01f*dy;
+
+        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+        float phimax = 3.141592f/2;
+        float phimin = -phimax;
+
+        if (g_CameraPhi > phimax)
+            g_CameraPhi = phimax;
+
+        if (g_CameraPhi < phimin)
+            g_CameraPhi = phimin;
+
+        // Atualizamos as variáveis globais para armazenar a posição atual do
+        // cursor como sendo a última posição conhecida do cursor.
+        g_LastCursorPosX = xpos;
+        g_LastCursorPosY = ypos;
+    }*/
+
+    /*if (g_RightMouseButtonPressed)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-    
+
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_ForearmAngleZ -= 0.01f*dx;
         g_ForearmAngleX += 0.01f*dy;
-    
+
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1116,20 +1248,20 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-    
+
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_TorsoPositionX += 0.01f*dx;
         g_TorsoPositionY -= 0.01f*dy;
-    
+
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
-    }
+    }*/
 }
 
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+/*void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // Atualizamos a distância da câmera para a origem utilizando a
     // movimentação da "rodinha", simulando um ZOOM.
@@ -1143,7 +1275,7 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     const float verysmallnumber = std::numeric_limits<float>::epsilon();
     if (g_CameraDistance < verysmallnumber)
         g_CameraDistance = verysmallnumber;
-}
+}*/
 
 // Definição da função que será chamada sempre que o usuário pressionar alguma
 // tecla do teclado. Veja http://www.glfw.org/docs/latest/input_guide.html#input_key
@@ -1221,6 +1353,42 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         LoadShadersFromFiles();
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
+    }
+
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    {
+        b_forward = true;
+    }
+    if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+    {
+        b_forward = false;
+    }
+
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    {
+        b_back = true;
+    }
+    if (key == GLFW_KEY_S && action == GLFW_RELEASE)
+    {
+        b_back = false;
+    }
+
+    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    {
+        b_right = true;
+    }
+    if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+    {
+        b_right = false;
+    }
+
+    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    {
+        b_left = true;
+    }
+    if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+    {
+        b_left = false;
     }
 }
 
@@ -1347,7 +1515,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     if ( ellapsed_seconds > 1.0f )
     {
         numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-    
+
         old_seconds = seconds;
         ellapsed_frames = 0;
     }
