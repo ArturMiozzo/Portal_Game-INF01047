@@ -440,10 +440,24 @@ int main(int argc, char* argv[])
         float height = 5.0f;
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(camera_position_c.x+0.2,camera_position_c.y-0.15,camera_position_c.z-0.7) * Matrix_Scale(0.25f, 0.25f, 0.25f) * Matrix_Rotate(3.141592f / 4.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f));
+        model = Matrix_Translate(0.2,-0.15,-0.5)
+        //model = Matrix_Translate(camera_position_c.x,camera_position_c.y,camera_position_c.z)
+        * Matrix_Scale(0.2f, 0.2f, 0.2f);
+         //* Matrix_Rotate(g_CameraPhi, glm::vec4(1.0f,0.0f,0.0f,0.0f))
+         //* Matrix_Rotate(g_CameraTheta, glm::vec4(0.0f,1.0f,0.0f,0.0f))
+        //* Matrix_Rotate(3.141592f / 0.8f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
+         //* Matrix_Translate(-x,0,0)
+         //* Matrix_Translate(0,-y,0)
+         //* Matrix_Translate(0,0,-z)
+         //* Matrix_Translate(-1.0,-0.15,-3.0);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glm::mat4 identity = Matrix_Identity();
+
+        glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
         glUniform1i(g_object_id_uniform, PORTALGUN);
         DrawVirtualObject("PortalGun");
+
+        glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
