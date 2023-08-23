@@ -244,6 +244,8 @@ glm::mat4 Matrix_Camera_View(glm::vec4* position_c, glm::vec4 view_vector, glm::
     float wy = w.y;
     float wz = w.z;
 
+    w.y = 0;
+    u.y = 0;
     if(b_fw)
     {
         *position_c += (-w * speed);

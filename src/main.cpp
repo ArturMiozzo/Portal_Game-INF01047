@@ -191,7 +191,7 @@ bool b_forward = false;
 bool b_right = false;
 bool b_back = false;
 bool b_left = false;
-float speed = 0.03;
+float speed = 0.06;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -1144,17 +1144,15 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    printf("x:%f y:%f\n", xpos, ypos);
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
     float dx, dy;
-    if(xpos >= 799 || xpos <= 0)
+    if(xpos >= 699 || xpos <= 100)
     {
-        printf("entrei");
-        if(ypos >= 599 || ypos <= 0)
+        if(ypos >= 499 || ypos <= 100)
         {
             glfwSetCursorPos(window, 400, 300);
             dx = 0;
@@ -1172,7 +1170,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         }
 
     }
-    else if(ypos >= 599 || ypos <= 0)
+    else if(ypos >= 499 || ypos <= 100)
     {
 
             glfwSetCursorPos(window, xpos, 300);
