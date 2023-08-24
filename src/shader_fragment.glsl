@@ -6,6 +6,7 @@
 // "shader_vertex.glsl" e "main.cpp".
 in vec4 position_world;
 in vec4 normal;
+in vec3 cor_interpolada_pelo_rasterizador;
 
 // Posição do vértice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
@@ -23,6 +24,8 @@ uniform mat4 projection;
 #define WALL  1
 #define ROOF  2
 #define PORTALGUN 3
+#define AIMLEFT  4
+#define AIMRIGHT  5
 
 uniform int object_id;
 
@@ -114,9 +117,13 @@ void main()
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
     }
-    else
+    else if ( object_id == AIMLEFT )
     {
-        Kd0 = vec3(0.0, 1.0, 1.0);
+        Kd0 = vec3(0.0,0.0,1.0);
+    }
+    else if ( object_id == AIMRIGHT )
+    {
+        Kd0 = vec3(1.0,0.5,0.0);
     }
 
     // Equação de Iluminação

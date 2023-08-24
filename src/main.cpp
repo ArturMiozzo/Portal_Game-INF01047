@@ -342,13 +342,13 @@ int main(int argc, char* argv[])
 
     GLfloat color_coefficients[] = {
     // Cores dos vértices do cubo
-    //  R     G     B     A
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+    //  R     G     B
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f // cor do vértice 1
     };
 
     GLuint indices[] = {
@@ -371,7 +371,9 @@ int main(int argc, char* argv[])
 
 	std::vector<GLuint> indicesvec(indices, indices + n);
 
-    BuildTrianglesAndAddToVirtualScene2("aim", &indicesvec, &modelvec, &colorvec);
+    BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvec, &colorvec);
+
+    BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvec, &colorvec);
 
     if ( argc > 1 )
     {
@@ -479,6 +481,8 @@ int main(int argc, char* argv[])
         #define WALL  1
         #define ROOF  2
         #define PORTALGUN  3
+        #define AIMLEFT  4
+        #define AIMRIGHT  5
 
         float width = 50.0f;
         float height = 5.0f;
@@ -501,10 +505,15 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PORTALGUN);
         DrawVirtualObject("PortalGun");
 
-        model = Matrix_Translate(0,0,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
+        model = Matrix_Translate(-0.05,0.05,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FLOOR);
-        DrawVirtualObject("aim");
+        glUniform1i(g_object_id_uniform, AIMLEFT);
+        DrawVirtualObject("aimLeft");
+
+        model = Matrix_Translate(0.05,-0.05,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, AIMRIGHT);
+        DrawVirtualObject("aimRight");
 
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
@@ -1001,8 +1010,8 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
     glBindBuffer(GL_ARRAY_BUFFER, VBO_normal_coefficients_id);
     glBufferData(GL_ARRAY_BUFFER, normal_coefficients->size() * sizeof(float), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, normal_coefficients->size() * sizeof(float), normal_coefficients->data());
-    location = 1; // "(location = 1)" em "shader_vertex.glsl"
-    number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    location = 2; // "(location = 1)" em "shader_vertex.glsl"
+    number_of_dimensions = 3; // vec4 em "shader_vertex.glsl"
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(location);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1016,18 +1025,6 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices->size() * sizeof(GLuint), indices->data());
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
     //
-
-    printf("%s",name);
-
-    for (int i = 0; i < (int)indices->size(); i++)
-        printf("%d",indices->at(i));
-
-    for (int i = 0; i < (int)model_coefficients->size(); i++)
-        printf("%f",model_coefficients->at(i));
-
-    for (int i = 0; i < (int)normal_coefficients->size(); i++)
-        printf("%f",normal_coefficients->at(i));
-
     // "Desligamos" o VAO, evitando assim que operações posteriores venham a
     // alterar o mesmo. Isso evita bugs.
     glBindVertexArray(0);
