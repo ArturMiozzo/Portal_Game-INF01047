@@ -125,7 +125,7 @@ GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Cria um programa de GPU
 void PrintObjModelInfo(ObjModel*); // Função para debugging
-
+void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients);
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
@@ -329,6 +329,50 @@ int main(int argc, char* argv[])
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
+    GLfloat model_coefficients[] = {
+    // Vértices de um cubo
+    //    X      Y     Z     W
+        0.0f,  0.2f,  0.0f, 1.0f, // posição do vértice 0
+        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
+        0.2, -0.2,  0.0f, 1.0f, // posição do vértice 2
+        0.0, -0.2,  0.0f, 1.0f, // posição do vértice 0
+        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
+        0.2, 0.2,  0.0f, 1.0f, // posição do vértice 2
+    };
+
+    GLfloat color_coefficients[] = {
+    // Cores dos vértices do cubo
+    //  R     G     B     A
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+    };
+
+    GLuint indices[] = {
+    // Definimos os índices dos vértices que definem as FACES de um cubo
+    // através de 12 triângulos que serão desenhados com o modo de renderização
+    // GL_TRIANGLES.
+        0, 1, 2, // triângulo 1
+        3, 4, 5, // triângulo 1
+    };
+
+    int n = sizeof(model_coefficients) / sizeof(model_coefficients[0]);
+
+	std::vector<GLfloat> modelvec(model_coefficients, model_coefficients + n);
+
+    n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
+
+	std::vector<GLfloat> colorvec(color_coefficients, color_coefficients + n);
+
+    n = sizeof(indices) / sizeof(indices[0]);
+
+	std::vector<GLuint> indicesvec(indices, indices + n);
+
+    BuildTrianglesAndAddToVirtualScene2("aim", &indicesvec, &modelvec, &colorvec);
+
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -439,6 +483,9 @@ int main(int argc, char* argv[])
         float width = 50.0f;
         float height = 5.0f;
 
+        glm::mat4 identity = Matrix_Identity();
+        glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
+
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.2,-0.15,-0.5)
         //model = Matrix_Translate(camera_position_c.x,camera_position_c.y,camera_position_c.z)
@@ -451,11 +498,13 @@ int main(int argc, char* argv[])
          //* Matrix_Translate(0,0,-z)
          //* Matrix_Translate(-1.0,-0.15,-3.0);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glm::mat4 identity = Matrix_Identity();
-
-        glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
         glUniform1i(g_object_id_uniform, PORTALGUN);
         DrawVirtualObject("PortalGun");
+
+        model = Matrix_Translate(0,0,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FLOOR);
+        DrawVirtualObject("aim");
 
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
@@ -906,6 +955,78 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLuint), indices.data());
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
     //
+
+    // "Desligamos" o VAO, evitando assim que operações posteriores venham a
+    // alterar o mesmo. Isso evita bugs.
+    glBindVertexArray(0);
+}
+
+void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients)
+{
+    GLuint vertex_array_object_id;
+    glGenVertexArrays(1, &vertex_array_object_id);
+    glBindVertexArray(vertex_array_object_id);
+
+    const float minval = std::numeric_limits<float>::min();
+    const float maxval = std::numeric_limits<float>::max();
+
+    glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
+    glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
+
+    SceneObject theobject;
+    std::string s(name);
+    theobject.name           = s;
+    theobject.first_index    = 0; // Primeiro índice
+    theobject.num_indices    = indices->size(); // Número de indices
+    theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
+    theobject.vertex_array_object_id = vertex_array_object_id;
+    theobject.bbox_min = bbox_min;
+    theobject.bbox_max = bbox_max;
+
+    g_VirtualScene[name] = theobject;
+
+    GLuint VBO_model_coefficients_id;
+    glGenBuffers(1, &VBO_model_coefficients_id);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
+    glBufferData(GL_ARRAY_BUFFER, model_coefficients->size() * sizeof(float), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, model_coefficients->size() * sizeof(float), model_coefficients->data());
+    GLuint location = 0; // "(location = 0)" em "shader_vertex.glsl"
+    GLint  number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(location);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLuint VBO_normal_coefficients_id;
+    glGenBuffers(1, &VBO_normal_coefficients_id);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_normal_coefficients_id);
+    glBufferData(GL_ARRAY_BUFFER, normal_coefficients->size() * sizeof(float), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, normal_coefficients->size() * sizeof(float), normal_coefficients->data());
+    location = 1; // "(location = 1)" em "shader_vertex.glsl"
+    number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(location);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLuint indices_id;
+    glGenBuffers(1, &indices_id);
+
+    // "Ligamos" o buffer. Note que o tipo agora é GL_ELEMENT_ARRAY_BUFFER.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices->size() * sizeof(GLuint), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices->size() * sizeof(GLuint), indices->data());
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
+    //
+
+    printf("%s",name);
+
+    for (int i = 0; i < (int)indices->size(); i++)
+        printf("%d",indices->at(i));
+
+    for (int i = 0; i < (int)model_coefficients->size(); i++)
+        printf("%f",model_coefficients->at(i));
+
+    for (int i = 0; i < (int)normal_coefficients->size(); i++)
+        printf("%f",normal_coefficients->at(i));
 
     // "Desligamos" o VAO, evitando assim que operações posteriores venham a
     // alterar o mesmo. Isso evita bugs.

@@ -114,6 +114,10 @@ void main()
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
     }
+    else
+    {
+        Kd0 = vec3(0.0, 1.0, 1.0);
+    }
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
