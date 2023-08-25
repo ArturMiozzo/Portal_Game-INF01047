@@ -49,6 +49,14 @@
 #include "matrices.h"
 
 
+// Define as dimensões do circulo
+# define CIRCLE_VERTEX  32 // numero de vertices, contando o centro
+# define CIRCLE_RADIUS_IN  0.6 // raio do circulo interno em NDC
+# define CIRCLE_RADIUS_OUT  1 // raio do circulo externo em NDC
+
+# define M_PI           3.14159265358979323846  // pi
+# define CIRCLE_SIDES  (CIRCLE_VERTEX+2)
+
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -125,7 +133,9 @@ GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Cria um programa de GPU
 void PrintObjModelInfo(ObjModel*); // Função para debugging
-void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients);
+void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients, GLenum rendering_mode);
+void BuildAim();
+void BuildPortal();
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
@@ -191,7 +201,7 @@ bool b_forward = false;
 bool b_right = false;
 bool b_back = false;
 bool b_left = false;
-float speed = 0.06;
+float speed = 0.3;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -329,51 +339,9 @@ int main(int argc, char* argv[])
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
 
-    GLfloat model_coefficients[] = {
-    // Vértices de um cubo
-    //    X      Y     Z     W
-        0.0f,  0.2f,  0.0f, 1.0f, // posição do vértice 0
-        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
-        0.2, -0.2,  0.0f, 1.0f, // posição do vértice 2
-        0.0, -0.2,  0.0f, 1.0f, // posição do vértice 0
-        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
-        0.2, 0.2,  0.0f, 1.0f, // posição do vértice 2
-    };
+    BuildAim();
 
-    GLfloat color_coefficients[] = {
-    // Cores dos vértices do cubo
-    //  R     G     B
-        1.0f, 0.5f, 0.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, // cor do vértice 1
-        1.0f, 0.5f, 0.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, // cor do vértice 1
-        1.0f, 0.5f, 0.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f // cor do vértice 1
-    };
-
-    GLuint indices[] = {
-    // Definimos os índices dos vértices que definem as FACES de um cubo
-    // através de 12 triângulos que serão desenhados com o modo de renderização
-    // GL_TRIANGLES.
-        0, 1, 2, // triângulo 1
-        3, 4, 5, // triângulo 1
-    };
-
-    int n = sizeof(model_coefficients) / sizeof(model_coefficients[0]);
-
-	std::vector<GLfloat> modelvec(model_coefficients, model_coefficients + n);
-
-    n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
-
-	std::vector<GLfloat> colorvec(color_coefficients, color_coefficients + n);
-
-    n = sizeof(indices) / sizeof(indices[0]);
-
-	std::vector<GLuint> indicesvec(indices, indices + n);
-
-    BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvec, &colorvec);
-
-    BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvec, &colorvec);
+    BuildPortal();
 
     if ( argc > 1 )
     {
@@ -524,6 +492,10 @@ int main(int argc, char* argv[])
         DrawVirtualObject("the_floor");
 
         // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f,height/2,-width+0.01) * Matrix_Scale(5, 5, 1);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, AIMLEFT);
+        DrawVirtualObject("Portal1");
         model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
@@ -970,7 +942,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     glBindVertexArray(0);
 }
 
-void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients)
+void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients, GLenum rendering_mode)
 {
     GLuint vertex_array_object_id;
     glGenVertexArrays(1, &vertex_array_object_id);
@@ -987,7 +959,7 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
     theobject.name           = s;
     theobject.first_index    = 0; // Primeiro índice
     theobject.num_indices    = indices->size(); // Número de indices
-    theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
+    theobject.rendering_mode = rendering_mode;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
     theobject.vertex_array_object_id = vertex_array_object_id;
     theobject.bbox_min = bbox_min;
     theobject.bbox_max = bbox_max;
@@ -1028,6 +1000,112 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
     // "Desligamos" o VAO, evitando assim que operações posteriores venham a
     // alterar o mesmo. Isso evita bugs.
     glBindVertexArray(0);
+}
+
+void BuildAim()
+{
+    GLfloat model_coefficients[] = {
+    // Vértices de um cubo
+    //    X      Y     Z     W
+        0.0f,  0.2f,  0.0f, 1.0f, // posição do vértice 0
+        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
+        0.2, -0.2,  0.0f, 1.0f, // posição do vértice 2
+        0.0, -0.2,  0.0f, 1.0f, // posição do vértice 0
+        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
+        0.2, 0.2,  0.0f, 1.0f, // posição do vértice 2
+    };
+
+    GLfloat color_coefficients[] = {
+    // Cores dos vértices do cubo
+    //  R     G     B
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f // cor do vértice 1
+    };
+
+    GLuint indices[] = {
+    // Definimos os índices dos vértices que definem as FACES de um cubo
+    // através de 12 triângulos que serão desenhados com o modo de renderização
+    // GL_TRIANGLES.
+        0, 1, 2, // triângulo 1
+        3, 4, 5, // triângulo 1
+    };
+
+    int n = sizeof(model_coefficients) / sizeof(model_coefficients[0]);
+
+	std::vector<GLfloat> modelvec(model_coefficients, model_coefficients + n);
+
+    n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
+
+	std::vector<GLfloat> colorvec(color_coefficients, color_coefficients + n);
+
+    n = sizeof(indices) / sizeof(indices[0]);
+
+	std::vector<GLuint> indicesvec(indices, indices + n);
+
+    BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
+
+    BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
+}
+
+void BuildPortal()
+{
+
+    GLfloat NDC_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    GLfloat color_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    for (int i = 0; i < CIRCLE_SIDES; i+=2)
+    {
+        // calcula a posição em radianos para desenhar o vertice
+        float radians = i/(CIRCLE_VERTEX*1.0) * 2 * M_PI;
+
+        // circulo interno
+        // x é o seno da posição
+        NDC_coefficients[i*4] = sin(radians) * CIRCLE_RADIUS_IN / 2.5;
+        // y é o cosseno
+        NDC_coefficients[i*4+1] = cos(radians) * CIRCLE_RADIUS_IN;
+        // o w é fixo em 1
+        NDC_coefficients[i*4+3] = 1.0f;
+
+        // circulo externo
+        // x é o seno da posição
+        NDC_coefficients[i*4+4] = sin(radians) * CIRCLE_RADIUS_OUT / 2;
+        // y é o cosseno
+        NDC_coefficients[i*4+5] = cos(radians) * CIRCLE_RADIUS_OUT;
+        // o w é fixo em 1
+        NDC_coefficients[i*4+7] = 1.0f;
+
+        // todos os vertices são na cor azul, 0,0,1,1
+        color_coefficients[i*4] = 1.0f;
+        color_coefficients[i*4+3] = 1.0f;
+        color_coefficients[i*4+4] = 1.0f;
+        color_coefficients[i*4+7] = 1.0f;
+    }
+
+    GLubyte indices[CIRCLE_SIDES]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
+
+    // no triangle fan, os indices são uma sequencia igual ao numero de lados
+    for(int i=0;i<CIRCLE_SIDES;i++)
+    {
+        indices[i]=i;
+    }
+
+    int n = sizeof(NDC_coefficients) / sizeof(NDC_coefficients[0]);
+
+	std::vector<GLfloat> modelvecportal(NDC_coefficients, NDC_coefficients + n);
+
+    n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
+
+	std::vector<GLfloat> colorvecportal(color_coefficients, color_coefficients + n);
+
+    n = sizeof(indices) / sizeof(indices[0]);
+
+	std::vector<GLuint> indicesvec(indices, indices + n);
+
+    BuildTrianglesAndAddToVirtualScene2("Portal1", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLES);
+    BuildTrianglesAndAddToVirtualScene2("Portal2", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLES);
 }
 
 // Carrega um Vertex Shader de um arquivo GLSL. Veja definição de LoadShader() abaixo.
