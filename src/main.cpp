@@ -136,6 +136,8 @@ void PrintObjModelInfo(ObjModel*); // Função para debugging
 void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients, GLenum rendering_mode);
 void BuildAim();
 void BuildPortal();
+bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_max);
+int CheckLineBox( glm::vec4 B1, glm::vec4 B2, glm::vec4 L1, glm::vec4 vector_view, glm::vec4 &Hit);
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
@@ -241,6 +243,11 @@ GLint g_bbox_max_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
+
+bool Portal1Created = false;
+glm::vec4 Portal1Position;
+bool Portal2Created = false;
+glm::vec4 Portal2Position;
 
 int main(int argc, char* argv[])
 {
@@ -414,7 +421,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -100.0f; // Posição do "far plane"
+        float farplane  = -200.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -458,17 +465,7 @@ int main(int argc, char* argv[])
         glm::mat4 identity = Matrix_Identity();
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.2,-0.15,-0.5)
-        //model = Matrix_Translate(camera_position_c.x,camera_position_c.y,camera_position_c.z)
-        * Matrix_Scale(0.2f, 0.2f, 0.2f);
-         //* Matrix_Rotate(g_CameraPhi, glm::vec4(1.0f,0.0f,0.0f,0.0f))
-         //* Matrix_Rotate(g_CameraTheta, glm::vec4(0.0f,1.0f,0.0f,0.0f))
-        //* Matrix_Rotate(3.141592f / 0.8f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
-         //* Matrix_Translate(-x,0,0)
-         //* Matrix_Translate(0,-y,0)
-         //* Matrix_Translate(0,0,-z)
-         //* Matrix_Translate(-1.0,-0.15,-3.0);
+        model = Matrix_Translate(0.2,-0.15,-0.5) * Matrix_Scale(0.2f, 0.2f, 0.2f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PORTALGUN);
         DrawVirtualObject("PortalGun");
@@ -485,65 +482,102 @@ int main(int argc, char* argv[])
 
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
-        // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, FLOOR);
         DrawVirtualObject("the_floor");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,height/2,-width+0.01) * Matrix_Scale(5, 5, 1);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, AIMLEFT);
-        DrawVirtualObject("Portal1");
-        model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(width,height/2,0.0f) * Matrix_Scale(0, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(-width,height/2,0.0f) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(-width,height/2,0.0f) * Matrix_Scale(0, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,height/2,width) * Matrix_Scale(width, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(-1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(0.0f,height/2,width) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(-1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,3*height/2,0.0f) * Matrix_Scale(width, height/2, width) * Matrix_Rotate(3.141592f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        /*
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
+        std::vector<glm::vec4> wallList;
 
+        wallList.push_back(glm::vec4(-width, 0, -width, 0));
+        wallList.push_back(glm::vec4(width, height, -width, 0));
 
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(0.6f)
-              * Matrix_Rotate_X(0.2f)
-              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
+        wallList.push_back(glm::vec4(width, 0, -width, 0));
+        wallList.push_back(glm::vec4(width, height, width, 0));
 
-        */
+        wallList.push_back(glm::vec4(-width, 0, width, 0));
+        wallList.push_back(glm::vec4(width, height, width, 0));
+
+        wallList.push_back(glm::vec4(-width, 0, -width, 0));
+        wallList.push_back(glm::vec4(-width, height, width, 0));
+
+        for (int i=0; i<wallList.size(); i+=2)
+        {
+            glm::vec4 point;
+            if(g_LeftMouseButtonPressed && !Portal1Created && CheckLineBox(wallList[i], wallList[i+1], camera_position_c, camera_view_vector, point))
+            {
+                Portal1Created = true;
+                Portal1Position = glm::vec4(point.x, height/2, point.z+0.01, 0.0);
+            }
+
+            if(g_RightMouseButtonPressed && !Portal2Created && CheckLineBox(wallList[i], wallList[i+1], camera_position_c, camera_view_vector, point))
+            {
+                Portal2Created = true;
+                Portal2Position = glm::vec4(point.x, height/2, point.z+0.01, 0.0);
+            }
+        }
+
+        if(Portal1Created)
+        {
+            if(detectColision(camera_position_c, glm::vec4(Portal1Position.x-5, 0, Portal1Position.z-1, 0), glm::vec4(Portal1Position.x+5, 0, Portal1Position.z+1, 0)))
+            {
+                if(Portal2Created)
+                {
+                    camera_position_c.x = Portal2Position.x;
+                    camera_position_c.z = Portal2Position.z+2;
+                    g_CameraTheta = g_CameraTheta + M_PI;
+                }
+            }
+
+            model = Matrix_Translate(Portal1Position.x,Portal1Position.y,Portal1Position.z) * Matrix_Scale(5, 5, 1) * Matrix_Rotate(0.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, AIMLEFT);
+            DrawVirtualObject("Portal1");
+        }
+
+        if(Portal2Created)
+        {
+            if(detectColision(camera_position_c, glm::vec4(Portal2Position.x-5, 0, Portal2Position.z-1, 0), glm::vec4(Portal2Position.x+5, 0, Portal2Position.z+1, 0)))
+            {
+               if(Portal1Created)
+                {
+                    camera_position_c.x = Portal1Position.x;
+                    camera_position_c.z = Portal1Position.z+2;
+                    g_CameraTheta = g_CameraTheta + M_PI;
+                }
+            }
+
+            model = Matrix_Translate(Portal2Position.x,Portal2Position.y,Portal2Position.z) * Matrix_Scale(5, 5, 1) * Matrix_Rotate(0.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, AIMRIGHT);
+            DrawVirtualObject("Portal2");
+        }
+
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -628,6 +662,70 @@ void LoadTextureImage(const char* filename)
     stbi_image_free(data);
 
     g_NumLoadedTextures += 1;
+}
+
+int GetIntersection( float fDst1, float fDst2, glm::vec4 P1, glm::vec4 P2, glm::vec4 &Hit) {
+if ( (fDst1 * fDst2) >= 0.0f) return 0;
+if ( fDst1 == fDst2) return 0;
+Hit = P1 + (P2-P1) * ( -fDst1/(fDst2-fDst1) );
+return 1;
+}
+
+int InBox( glm::vec4 Hit, glm::vec4 B1, glm::vec4 B2, const int Axis) {
+if ( Axis==1 && Hit.z > B1.z && Hit.z < B2.z && Hit.y > B1.y && Hit.y < B2.y) return 1;
+if ( Axis==2 && Hit.z > B1.z && Hit.z < B2.z && Hit.x > B1.x && Hit.x < B2.x) return 1;
+if ( Axis==3 && Hit.x > B1.x && Hit.x < B2.x && Hit.y > B1.y && Hit.y < B2.y) return 1;
+return 0;
+}
+
+// returns true if line (L1, L2) intersects with the box (B1, B2)
+// returns intersection point in Hit
+int CheckLineBox( glm::vec4 B1, glm::vec4 B2, glm::vec4 L1, glm::vec4 vector_view, glm::vec4 &Hit)
+{
+    glm::vec4 L2 = 50.0f *vector_view + L1;
+
+if (L2.x < B1.x && L1.x < B1.x) return false;
+if (L2.x > B2.x && L1.x > B2.x) return false;
+if (L2.y < B1.y && L1.y < B1.y) return false;
+if (L2.y > B2.y && L1.y > B2.y) return false;
+if (L2.z < B1.z && L1.z < B1.z) return false;
+if (L2.z > B2.z && L1.z > B2.z) return false;
+if (L1.x > B1.x && L1.x < B2.x &&
+    L1.y > B1.y && L1.y < B2.y &&
+    L1.z > B1.z && L1.z < B2.z)
+    {Hit = L1;
+    return true;}
+if ( (GetIntersection( L1.x-B1.x, L2.x-B1.x, L1, L2, Hit) && InBox( Hit, B1, B2, 1 ))
+  || (GetIntersection( L1.y-B1.y, L2.y-B1.y, L1, L2, Hit) && InBox( Hit, B1, B2, 2 ))
+  || (GetIntersection( L1.z-B1.z, L2.z-B1.z, L1, L2, Hit) && InBox( Hit, B1, B2, 3 ))
+  || (GetIntersection( L1.x-B2.x, L2.x-B2.x, L1, L2, Hit) && InBox( Hit, B1, B2, 1 ))
+  || (GetIntersection( L1.y-B2.y, L2.y-B2.y, L1, L2, Hit) && InBox( Hit, B1, B2, 2 ))
+  || (GetIntersection( L1.z-B2.z, L2.z-B2.z, L1, L2, Hit) && InBox( Hit, B1, B2, 3 )))
+	return true;
+
+return false;
+}
+
+bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_max)
+{
+    if (position.x < hitbox_min.x || position.x > hitbox_max.x)
+        return false; // No collision along X-axis
+
+    if (position.y < hitbox_min.y || position.y > hitbox_max.y)
+        return false; // No collision along Y-axis
+
+    if (position.z < hitbox_min.z || position.z > hitbox_max.z)
+        return false; // No collision along Z-axis
+
+    return true;
+
+    /*for (std::map<std::string, SceneObject>::iterator it = g_VirtualScene.begin(); it != g_VirtualScene.end(); it++)
+    {
+        SceneObject obj = it->second;
+        printf("\n%s: ", ((std::string)it->first).c_str());
+        printf("bboxmin x:%f y:%f z:%f ", obj.bbox_min.x, obj.bbox_min.y, obj.bbox_min.z);
+        printf("bboxmax x:%f y:%f z:%f ", obj.bbox_max.x, obj.bbox_max.y, obj.bbox_max.z);
+    }*/
 }
 
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
