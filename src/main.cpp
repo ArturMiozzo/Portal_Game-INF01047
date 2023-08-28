@@ -116,6 +116,12 @@ struct ObjModel
     }
 };
 
+struct bbox
+{
+    glm::vec4    bbox_min;
+    glm::vec4    bbox_max;
+    double       angle;
+};
 
 // Declaração de funções utilizadas para pilha de matrizes de modelagem.
 void PushMatrix(glm::mat4 M);
@@ -138,6 +144,7 @@ void BuildAim();
 void BuildPortal();
 bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_max);
 int CheckLineBox( glm::vec4 B1, glm::vec4 B2, glm::vec4 L1, glm::vec4 vector_view, glm::vec4 &Hit);
+double boxAngle(glm::vec4 B1, glm::vec4 B2);
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
@@ -245,9 +252,9 @@ GLint g_bbox_max_uniform;
 GLuint g_NumLoadedTextures = 0;
 
 bool Portal1Created = false;
-glm::vec4 Portal1Position;
+bbox Portal1Bbox;
 bool Portal2Created = false;
-glm::vec4 Portal2Position;
+bbox Portal2Bbox;
 
 int main(int argc, char* argv[])
 {
@@ -278,7 +285,7 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
+    window = glfwCreateWindow(1600, 1200, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -307,7 +314,7 @@ int main(int argc, char* argv[])
     // redimensionada, por consequência alterando o tamanho do "framebuffer"
     // (região de memória onde são armazenados os pixels da imagem).
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    FramebufferSizeCallback(window, 800, 600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+    FramebufferSizeCallback(window, 1600, 1200); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
 
     // Imprimimos no terminal informações sobre a GPU do sistema
     const GLubyte *vendor      = glGetString(GL_VENDOR);
@@ -512,49 +519,129 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        std::vector<glm::vec4> wallList;
+        std::vector<bbox> wallList;
 
-        wallList.push_back(glm::vec4(-width, 0, -width, 0));
-        wallList.push_back(glm::vec4(width, height, -width, 0));
+        bbox wall1;
+        wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
+        wall1.bbox_max = glm::vec4(width, height, -width, 0);
+        wall1.angle = 0;
 
-        wallList.push_back(glm::vec4(width, 0, -width, 0));
-        wallList.push_back(glm::vec4(width, height, width, 0));
+        bbox wall2;
+        wall2.bbox_min = glm::vec4(width, 0, -width, 0);
+        wall2.bbox_max = glm::vec4(width, height, width, 0);
+        wall2.angle = -M_PI/2;
 
-        wallList.push_back(glm::vec4(-width, 0, width, 0));
-        wallList.push_back(glm::vec4(width, height, width, 0));
+        bbox wall3;
+        wall3.bbox_min = glm::vec4(-width, 0, width, 0);
+        wall3.bbox_max = glm::vec4(width, height, width, 0);
+        wall3.angle = -M_PI;
 
-        wallList.push_back(glm::vec4(-width, 0, -width, 0));
-        wallList.push_back(glm::vec4(-width, height, width, 0));
+        bbox wall4;
+        wall4.bbox_min = glm::vec4(-width, 0, -width, 0);
+        wall4.bbox_max = glm::vec4(-width, height, width, 0);
+        wall4.angle = M_PI/2;
 
-        for (int i=0; i<wallList.size(); i+=2)
+        wallList.push_back(wall1);
+        wallList.push_back(wall2);
+        wallList.push_back(wall3);
+        wallList.push_back(wall4);
+
+        for (int i=0; i<wallList.size(); i++)
         {
             glm::vec4 point;
-            if(g_LeftMouseButtonPressed && !Portal1Created && CheckLineBox(wallList[i], wallList[i+1], camera_position_c, camera_view_vector, point))
+            if(g_LeftMouseButtonPressed && !Portal1Created && CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max, camera_position_c, camera_view_vector, point))
             {
+                float deslX;
+                float deslZ;
+
+                if(wallList[i].angle == -M_PI || wallList[i].angle == 0)
+                {
+                    deslX = 0;
+                    deslZ = 0.01;
+                }
+                else
+                {
+                    deslX = 0.01;
+                    deslZ = 0;
+                }
+                if(wallList[i].angle < 0)
+                {
+                    deslX = deslX * -1;
+                    deslZ = deslZ * -1;
+                }
+
                 Portal1Created = true;
-                Portal1Position = glm::vec4(point.x, height/2, point.z+0.01, 0.0);
+                Portal1Bbox.bbox_min = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                Portal1Bbox.bbox_max = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                Portal1Bbox.angle = wallList[i].angle;
             }
 
-            if(g_RightMouseButtonPressed && !Portal2Created && CheckLineBox(wallList[i], wallList[i+1], camera_position_c, camera_view_vector, point))
+            if(g_RightMouseButtonPressed && !Portal2Created && CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max, camera_position_c, camera_view_vector, point))
             {
+                float deslX;
+                float deslZ;
+
+                if(wallList[i].angle == -M_PI || wallList[i].angle == 0)
+                {
+                    deslX = 0;
+                    deslZ = 0.01;
+                }
+                else
+                {
+                    deslX = 0.01;
+                    deslZ = 0;
+                }
+                if(wallList[i].angle < 0)
+                {
+                    deslX = deslX * -1;
+                    deslZ = deslZ * -1;
+                }
+
                 Portal2Created = true;
-                Portal2Position = glm::vec4(point.x, height/2, point.z+0.01, 0.0);
+                Portal2Bbox.bbox_min = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                Portal2Bbox.bbox_max = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                Portal2Bbox.angle = wallList[i].angle;
             }
         }
 
         if(Portal1Created)
         {
-            if(detectColision(camera_position_c, glm::vec4(Portal1Position.x-5, 0, Portal1Position.z-1, 0), glm::vec4(Portal1Position.x+5, 0, Portal1Position.z+1, 0)))
+            bbox hitBoxPortal1;
+            hitBoxPortal1.bbox_min = Portal1Bbox.bbox_min;
+            hitBoxPortal1.bbox_max = Portal1Bbox.bbox_max;
+
+            int deslX;
+            int deslZ;
+
+            if(hitBoxPortal1.angle == -M_PI || hitBoxPortal1.angle == 0)
+            {
+                deslX = 1;
+                deslZ = 5;
+            }
+            else
+            {
+                deslX = 5;
+                deslZ = 1;
+            }
+
+            hitBoxPortal1.bbox_min.x -= deslX;
+            hitBoxPortal1.bbox_max.x += deslX;
+            hitBoxPortal1.bbox_min.z -= deslZ;
+            hitBoxPortal1.bbox_max.z += deslZ;
+            hitBoxPortal1.bbox_min.y = 0;
+            hitBoxPortal1.bbox_max.y = height;
+
+            if(detectColision(camera_position_c, hitBoxPortal1.bbox_min, hitBoxPortal1.bbox_max))
             {
                 if(Portal2Created)
                 {
-                    camera_position_c.x = Portal2Position.x;
-                    camera_position_c.z = Portal2Position.z+2;
-                    g_CameraTheta = g_CameraTheta + M_PI;
+                    camera_position_c.x = Portal2Bbox.bbox_max.x;
+                    camera_position_c.z = Portal2Bbox.bbox_max.z;
+                    g_CameraTheta = g_CameraTheta + (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI;
                 }
             }
 
-            model = Matrix_Translate(Portal1Position.x,Portal1Position.y,Portal1Position.z) * Matrix_Scale(5, 5, 1) * Matrix_Rotate(0.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
+            model = Matrix_Translate(Portal1Bbox.bbox_max.x,Portal1Bbox.bbox_max.y,Portal1Bbox.bbox_max.z) * Matrix_Rotate(Portal1Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Scale(5, 5, 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMLEFT);
             DrawVirtualObject("Portal1");
@@ -562,17 +649,42 @@ int main(int argc, char* argv[])
 
         if(Portal2Created)
         {
-            if(detectColision(camera_position_c, glm::vec4(Portal2Position.x-5, 0, Portal2Position.z-1, 0), glm::vec4(Portal2Position.x+5, 0, Portal2Position.z+1, 0)))
+            bbox hitBoxPortal2;
+            hitBoxPortal2.bbox_min = Portal2Bbox.bbox_min;
+            hitBoxPortal2.bbox_max = Portal2Bbox.bbox_max;
+
+            int deslX;
+            int deslZ;
+
+            if(hitBoxPortal2.angle == -M_PI || hitBoxPortal2.angle == 0)
+            {
+                deslX = 1;
+                deslZ = 5;
+            }
+            else
+            {
+                deslX = 5;
+                deslZ = 1;
+            }
+
+            hitBoxPortal2.bbox_min.x -= deslX;
+            hitBoxPortal2.bbox_max.x += deslX;
+            hitBoxPortal2.bbox_min.z -= deslZ;
+            hitBoxPortal2.bbox_max.z += deslZ;
+            hitBoxPortal2.bbox_min.y = 0;
+            hitBoxPortal2.bbox_max.y = height;
+
+            if(detectColision(camera_position_c, hitBoxPortal2.bbox_min, hitBoxPortal2.bbox_max))
             {
                if(Portal1Created)
                 {
-                    camera_position_c.x = Portal1Position.x;
-                    camera_position_c.z = Portal1Position.z+2;
-                    g_CameraTheta = g_CameraTheta + M_PI;
+                    camera_position_c.x = Portal1Bbox.bbox_max.x;
+                    camera_position_c.z = Portal1Bbox.bbox_max.z;
+                    g_CameraTheta = g_CameraTheta + (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI;
                 }
             }
 
-            model = Matrix_Translate(Portal2Position.x,Portal2Position.y,Portal2Position.z) * Matrix_Scale(5, 5, 1) * Matrix_Rotate(0.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f));
+            model = Matrix_Translate(Portal2Bbox.bbox_max.x,Portal2Bbox.bbox_max.y,Portal2Bbox.bbox_max.z) * Matrix_Rotate(Portal2Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Scale(5, 5, 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMRIGHT);
             DrawVirtualObject("Portal2");
@@ -726,6 +838,11 @@ bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_m
         printf("bboxmin x:%f y:%f z:%f ", obj.bbox_min.x, obj.bbox_min.y, obj.bbox_min.z);
         printf("bboxmax x:%f y:%f z:%f ", obj.bbox_max.x, obj.bbox_max.y, obj.bbox_max.z);
     }*/
+}
+
+double boxAngle(glm::vec4 B1, glm::vec4 B2)
+{
+    return atan2(B2.y - B1.y, B2.x - B1.x);
 }
 
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
