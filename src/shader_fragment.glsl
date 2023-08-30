@@ -76,6 +76,16 @@ void main()
 
     vec3 Kd0;
 
+    // Vetor que define o sentido da reflexão especular ideal.
+    vec4 r = -1*l+2*n*(dot(n,l));
+
+     // Parâmetros que definem as propriedades espectrais da superfície
+    vec3 Kd; // Refletância difusa
+    vec3 Ks; // Refletância especular
+    vec3 Ka; // Refletância ambiente
+    float q; // Expoente especular para o modelo de iluminação de Phong
+
+
     if ( object_id == FLOOR )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
@@ -83,6 +93,11 @@ void main()
         V = texcoords.y*5 - floor(texcoords.y*5);
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TextureFloor, vec2(U,V)).rgb;
+        // Propriedades espectrais do chão
+        Kd = vec3(0.2,0.2,0.2);
+        Ks = vec3(0.3,0.3,0.3);
+        Ka = vec3(0.0,0.0,0.0);
+        q = 20.0;
     }
     else if ( object_id == WALL )
     {
@@ -91,6 +106,10 @@ void main()
         V = texcoords.y*2 - floor(texcoords.y*2);
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TextureWall, vec2(U,V)).rgb;
+        Kd = vec3(0.2,0.2,0.2);
+        Ks = vec3(0.3,0.3,0.3);
+        Ka = vec3(0.2,0.2,0.2);
+        q = 20.0;
     }
     else if ( object_id == ROOF )
     {
@@ -99,6 +118,10 @@ void main()
         V = texcoords.y*5 - floor(texcoords.y*5);
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TextureRoof, vec2(U,V)).rgb;
+        Kd = vec3(0.2,0.2,0.2);
+        Ks = vec3(0.3,0.3,0.3);
+        Ka = vec3(0.2,0.2,0.2);
+        q = 20.0;
     }
     else if ( object_id == PORTALGUN )
     {
@@ -116,6 +139,10 @@ void main()
 
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
     }
     else if ( object_id == AIMLEFT )
     {
@@ -126,10 +153,29 @@ void main()
         Kd0 = vec3(1.0,0.5,0.0);
     }
 
+    // Espectro da fonte de iluminação
+    vec3 I = vec3(1.0,1.0,1.0);
+
+    // Espectro da luz ambiente
+    vec3 Ia = vec3(0.5,0.5,0.5);
+
+    // Termo difuso utilizando a lei dos cossenos de Lambert
+    vec3 lambert_diffuse_term = Kd*I*(max(0,dot(n,l)));
+
+    // Termo ambiente
+    vec3 ambient_term = Ka*Ia;
+
+    // Termo especular utilizando o modelo de iluminação de Phong
+    vec3 phong_specular_term  = Ks*I*pow(max(0,(dot(r,v))),q);
+
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    color = Kd0;// * (lambert + 0.01);
+    if(object_id == AIMRIGHT || object_id == AIMLEFT)
+    {
+        color = Kd0;// * (lambert + 0.01);
+    }
+    else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
