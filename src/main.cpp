@@ -50,8 +50,8 @@
 
 
 // Define as dimensões do circulo
-# define CIRCLE_VERTEX  33 // numero de vertices, contando o centro
-# define CIRCLE_RADIUS_IN  0.6 // raio do circulo interno em NDC
+# define CIRCLE_VERTEX  32 // numero de vertices, contando o centro
+# define CIRCLE_RADIUS_IN  0.8 // raio do circulo interno em NDC
 # define CIRCLE_RADIUS_OUT  1 // raio do circulo externo em NDC
 
 # define M_PI           3.14159265358979323846  // pi
@@ -255,6 +255,8 @@ bool Portal1Created = false;
 bbox Portal1Bbox;
 bool Portal2Created = false;
 bbox Portal2Bbox;
+double lastPortal1Time = 0;
+double lastPortal2Time = 0;
 
 int main(int argc, char* argv[])
 {
@@ -391,6 +393,8 @@ int main(int argc, char* argv[])
         //           R     G     B     A
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
+        double time = glfwGetTime();
+
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -524,22 +528,18 @@ int main(int argc, char* argv[])
         bbox wall1;
         wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
         wall1.bbox_max = glm::vec4(width, height, -width, 0);
-        wall1.angle = 0;
 
         bbox wall2;
-        wall2.bbox_min = glm::vec4(width, 0, -width, 0);
-        wall2.bbox_max = glm::vec4(width, height, width, 0);
-        wall2.angle = -M_PI/2;
+        wall2.bbox_min = glm::vec4(-width, 0, -width, 0);
+        wall2.bbox_max = glm::vec4(-width, height, width, 0);
 
         bbox wall3;
         wall3.bbox_min = glm::vec4(-width, 0, width, 0);
         wall3.bbox_max = glm::vec4(width, height, width, 0);
-        wall3.angle = -M_PI;
 
         bbox wall4;
-        wall4.bbox_min = glm::vec4(-width, 0, -width, 0);
-        wall4.bbox_max = glm::vec4(-width, height, width, 0);
-        wall4.angle = M_PI/2;
+        wall4.bbox_min = glm::vec4(width, 0, -width, 0);
+        wall4.bbox_max = glm::vec4(width, height, width, 0);
 
         wallList.push_back(wall1);
         wallList.push_back(wall2);
@@ -549,58 +549,89 @@ int main(int argc, char* argv[])
         for (int i=0; i<wallList.size(); i++)
         {
             glm::vec4 point;
-            if(g_LeftMouseButtonPressed && !Portal1Created && CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max, camera_position_c, camera_view_vector, point))
+            if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
             {
-                float deslX;
-                float deslZ;
+                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                               camera_position_c, camera_view_vector, point))
+                {
+                    lastPortal1Time = time;
 
-                if(wallList[i].angle == -M_PI || wallList[i].angle == 0)
-                {
-                    deslX = 0;
-                    deslZ = 0.01;
-                }
-                else
-                {
-                    deslX = 0.01;
-                    deslZ = 0;
-                }
-                if(wallList[i].angle < 0)
-                {
-                    deslX = deslX * -1;
-                    deslZ = deslZ * -1;
-                }
+                    float deslX;
+                    float deslZ;
+                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
 
-                Portal1Created = true;
-                Portal1Bbox.bbox_min = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                Portal1Bbox.bbox_max = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                Portal1Bbox.angle = wallList[i].angle;
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(wallList[i].bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(wallList[i].bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+
+
+                    Portal1Created = true;
+                    Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal1Bbox.angle = angle;
+                }
             }
 
-            if(g_RightMouseButtonPressed && !Portal2Created && CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max, camera_position_c, camera_view_vector, point))
+            if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
             {
-                float deslX;
-                float deslZ;
 
-                if(wallList[i].angle == -M_PI || wallList[i].angle == 0)
+                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                                 camera_position_c, camera_view_vector, point))
                 {
-                    deslX = 0;
-                    deslZ = 0.01;
-                }
-                else
-                {
-                    deslX = 0.01;
-                    deslZ = 0;
-                }
-                if(wallList[i].angle < 0)
-                {
-                    deslX = deslX * -1;
-                    deslZ = deslZ * -1;
-                }
+                    lastPortal2Time = time;
 
-                Portal2Created = true;
-                Portal2Bbox.bbox_min = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                Portal2Bbox.bbox_max = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                Portal2Bbox.angle = wallList[i].angle;
+                    float deslX;
+                    float deslZ;
+                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(wallList[i].bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(wallList[i].bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+                    Portal2Created = true;
+                    Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal2Bbox.angle = angle;
+                }
             }
         }
 
@@ -613,15 +644,15 @@ int main(int argc, char* argv[])
             int deslX;
             int deslZ;
 
-            if(hitBoxPortal1.angle == -M_PI || hitBoxPortal1.angle == 0)
-            {
-                deslX = 1;
-                deslZ = 5;
-            }
-            else
+            if(abs(cos(Portal1Bbox.angle))>0.01)
             {
                 deslX = 5;
                 deslZ = 1;
+            }
+            else
+            {
+                deslX = 1;
+                deslZ = 5;
             }
 
             hitBoxPortal1.bbox_min.x -= deslX;
@@ -635,13 +666,37 @@ int main(int argc, char* argv[])
             {
                 if(Portal2Created)
                 {
-                    camera_position_c.x = Portal2Bbox.bbox_max.x;
-                    camera_position_c.z = Portal2Bbox.bbox_max.z;
-                    g_CameraTheta = g_CameraTheta + (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI;
+                    float angleCorrection = (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI * cos(Portal1Bbox.angle - Portal2Bbox.angle);
+
+                    if(angleCorrection == -0.0) angleCorrection = 0.0;
+
+                    if(abs(cos(Portal2Bbox.angle))>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 5;
+
+                        if(Portal2Bbox.bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                    }
+                    else
+                    {
+                        deslX = 5;
+                        deslZ = 0;
+
+                        if(Portal2Bbox.bbox_min.x>0)
+                            deslX = deslX * -1;
+                    }
+
+                    camera_position_c.x = Portal2Bbox.bbox_min.x + deslX;
+                    camera_position_c.z = Portal2Bbox.bbox_min.z + deslZ;
+
+                    g_CameraTheta = g_CameraTheta + angleCorrection;
                 }
             }
 
-            model = Matrix_Translate(Portal1Bbox.bbox_max.x,Portal1Bbox.bbox_max.y,Portal1Bbox.bbox_max.z) * Matrix_Rotate(Portal1Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Scale(5, 5, 1);
+            model = Matrix_Translate(Portal1Bbox.bbox_min.x,Portal1Bbox.bbox_min.y,Portal1Bbox.bbox_min.z)
+             * Matrix_Rotate(Portal1Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
+             * Matrix_Scale(5, 5, 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMLEFT);
             DrawVirtualObject("Portal1");
@@ -655,16 +710,15 @@ int main(int argc, char* argv[])
 
             int deslX;
             int deslZ;
-
-            if(hitBoxPortal2.angle == -M_PI || hitBoxPortal2.angle == 0)
-            {
-                deslX = 1;
-                deslZ = 5;
-            }
-            else
+            if(abs(cos(Portal2Bbox.angle))>0.01)
             {
                 deslX = 5;
                 deslZ = 1;
+            }
+            else
+            {
+                deslX = 1;
+                deslZ = 5;
             }
 
             hitBoxPortal2.bbox_min.x -= deslX;
@@ -678,13 +732,37 @@ int main(int argc, char* argv[])
             {
                if(Portal1Created)
                 {
-                    camera_position_c.x = Portal1Bbox.bbox_max.x;
-                    camera_position_c.z = Portal1Bbox.bbox_max.z;
-                    g_CameraTheta = g_CameraTheta + (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI;
+                    float angleCorrection = (Portal2Bbox.angle - Portal1Bbox.angle) + M_PI * cos(Portal2Bbox.angle - Portal1Bbox.angle);
+
+                    if(angleCorrection == -0.0) angleCorrection = 0.0;
+
+                    if(abs(cos(Portal1Bbox.angle))>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 5;
+
+                        if(Portal1Bbox.bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                    }
+                    else
+                    {
+                        deslX = 5;
+                        deslZ = 0;
+
+                        if(Portal1Bbox.bbox_min.x>0)
+                            deslX = deslX * -1;
+                    }
+
+                    camera_position_c.x = Portal1Bbox.bbox_min.x + deslX;
+                    camera_position_c.z = Portal1Bbox.bbox_min.z + deslZ;
+
+                    g_CameraTheta = g_CameraTheta + angleCorrection;
                 }
             }
 
-            model = Matrix_Translate(Portal2Bbox.bbox_max.x,Portal2Bbox.bbox_max.y,Portal2Bbox.bbox_max.z) * Matrix_Rotate(Portal2Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Scale(5, 5, 1);
+            model = Matrix_Translate(Portal2Bbox.bbox_min.x,Portal2Bbox.bbox_min.y,Portal2Bbox.bbox_min.z)
+             * Matrix_Rotate(Portal2Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
+             * Matrix_Scale(5, 5, 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMRIGHT);
             DrawVirtualObject("Portal2");
@@ -794,7 +872,7 @@ return 0;
 // returns intersection point in Hit
 int CheckLineBox( glm::vec4 B1, glm::vec4 B2, glm::vec4 L1, glm::vec4 vector_view, glm::vec4 &Hit)
 {
-    glm::vec4 L2 = 50.0f *vector_view + L1;
+    glm::vec4 L2 = 500.0f * vector_view + L1;
 
 if (L2.x < B1.x && L1.x < B1.x) return false;
 if (L2.x > B2.x && L1.x > B2.x) return false;
@@ -1269,23 +1347,8 @@ void BuildAim()
 void BuildPortal()
 {
 
-    //GLfloat NDC_coefficients[CIRCLE_SIDES*4] = { 0.0f };
-    GLfloat NDC_coefficients[CIRCLE_VERTEX*4] = {0.0f};
-    NDC_coefficients[0] = 0.0f;
-    NDC_coefficients[1] = 0.0f;
-    NDC_coefficients[2] = 0.0f;
-    NDC_coefficients[3] = 1.0f;
-    int counter = 1;
-    for(float theta = 0; theta < 2*M_PI; theta += M_PI*2/32)
-    {
-        NDC_coefficients[counter*4] = 0.7f*cos(theta)/1.75;
-        NDC_coefficients[counter*4+1] = 0.7f*sin(theta);
-        NDC_coefficients[counter*4+2] = 0.0f;
-        NDC_coefficients[counter*4+3] = 1.0f;
-        counter++;
-    }
-    //GLfloat color_coefficients[CIRCLE_SIDES*4] = { 0.0f };
-    /*
+    GLfloat NDC_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    GLfloat color_coefficients[CIRCLE_SIDES*4] = { 0.0f };
     for (int i = 0; i < CIRCLE_SIDES; i+=2)
     {
         // calcula a posição em radianos para desenhar o vertice
@@ -1312,23 +1375,15 @@ void BuildPortal()
         color_coefficients[i*4+3] = 1.0f;
         color_coefficients[i*4+4] = 1.0f;
         color_coefficients[i*4+7] = 1.0f;
-    }*/
-    GLfloat color_coefficients[CIRCLE_VERTEX*4] = { 0.0f };
-    for(int i = 0; i<CIRCLE_VERTEX; i++)
-    {
-        color_coefficients[i*4] = 1.0f;
-        color_coefficients[i*4+1] = 0.0f;
-        color_coefficients[i*4+2] = 0.0f;
-        color_coefficients[i*4+3] = 0.0f;
     }
-    GLubyte indices[34]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
+
+    GLubyte indices[CIRCLE_SIDES]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
 
     // no triangle fan, os indices são uma sequencia igual ao numero de lados
-    for(int i=0;i<CIRCLE_VERTEX;i++)
+    for(int i=0;i<CIRCLE_SIDES;i++)
     {
         indices[i]=i;
     }
-    indices[33] = 1; //{0, 1, 2, 3, ... 31, 32, 1};
 
     int n = sizeof(NDC_coefficients) / sizeof(NDC_coefficients[0]);
 
@@ -1342,8 +1397,8 @@ void BuildPortal()
 
 	std::vector<GLuint> indicesvec(indices, indices + n);
 
-    BuildTrianglesAndAddToVirtualScene2("Portal1", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_FAN);
-    BuildTrianglesAndAddToVirtualScene2("Portal2", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_FAN);
+    BuildTrianglesAndAddToVirtualScene2("Portal1", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_STRIP);
+    BuildTrianglesAndAddToVirtualScene2("Portal2", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_STRIP);
 }
 
 // Carrega um Vertex Shader de um arquivo GLSL. Veja definição de LoadShader() abaixo.
