@@ -50,7 +50,7 @@
 
 
 // Define as dimensões do circulo
-# define CIRCLE_VERTEX  32 // numero de vertices, contando o centro
+# define CIRCLE_VERTEX  33 // numero de vertices, contando o centro
 # define CIRCLE_RADIUS_IN  0.6 // raio do circulo interno em NDC
 # define CIRCLE_RADIUS_OUT  1 // raio do circulo externo em NDC
 
@@ -1269,8 +1269,23 @@ void BuildAim()
 void BuildPortal()
 {
 
-    GLfloat NDC_coefficients[CIRCLE_SIDES*4] = { 0.0f };
-    GLfloat color_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    //GLfloat NDC_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    GLfloat NDC_coefficients[CIRCLE_VERTEX*4] = {0.0f};
+    NDC_coefficients[0] = 0.0f;
+    NDC_coefficients[1] = 0.0f;
+    NDC_coefficients[2] = 0.0f;
+    NDC_coefficients[3] = 1.0f;
+    int counter = 1;
+    for(float theta = 0; theta < 2*M_PI; theta += M_PI*2/32)
+    {
+        NDC_coefficients[counter*4] = 0.7f*cos(theta)/1.75;
+        NDC_coefficients[counter*4+1] = 0.7f*sin(theta);
+        NDC_coefficients[counter*4+2] = 0.0f;
+        NDC_coefficients[counter*4+3] = 1.0f;
+        counter++;
+    }
+    //GLfloat color_coefficients[CIRCLE_SIDES*4] = { 0.0f };
+    /*
     for (int i = 0; i < CIRCLE_SIDES; i+=2)
     {
         // calcula a posição em radianos para desenhar o vertice
@@ -1297,15 +1312,23 @@ void BuildPortal()
         color_coefficients[i*4+3] = 1.0f;
         color_coefficients[i*4+4] = 1.0f;
         color_coefficients[i*4+7] = 1.0f;
+    }*/
+    GLfloat color_coefficients[CIRCLE_VERTEX*4] = { 0.0f };
+    for(int i = 0; i<CIRCLE_VERTEX; i++)
+    {
+        color_coefficients[i*4] = 1.0f;
+        color_coefficients[i*4+1] = 0.0f;
+        color_coefficients[i*4+2] = 0.0f;
+        color_coefficients[i*4+3] = 0.0f;
     }
-
-    GLubyte indices[CIRCLE_SIDES]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
+    GLubyte indices[34]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
 
     // no triangle fan, os indices são uma sequencia igual ao numero de lados
-    for(int i=0;i<CIRCLE_SIDES;i++)
+    for(int i=0;i<CIRCLE_VERTEX;i++)
     {
         indices[i]=i;
     }
+    indices[33] = 1; //{0, 1, 2, 3, ... 31, 32, 1};
 
     int n = sizeof(NDC_coefficients) / sizeof(NDC_coefficients[0]);
 
@@ -1319,8 +1342,8 @@ void BuildPortal()
 
 	std::vector<GLuint> indicesvec(indices, indices + n);
 
-    BuildTrianglesAndAddToVirtualScene2("Portal1", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLES);
-    BuildTrianglesAndAddToVirtualScene2("Portal2", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLES);
+    BuildTrianglesAndAddToVirtualScene2("Portal1", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_FAN);
+    BuildTrianglesAndAddToVirtualScene2("Portal2", &indicesvec, &modelvecportal, &colorvecportal, GL_TRIANGLE_FAN);
 }
 
 // Carrega um Vertex Shader de um arquivo GLSL. Veja definição de LoadShader() abaixo.
