@@ -51,12 +51,13 @@
 
 // Define as dimensões do circulo
 # define CIRCLE_VERTEX  32 // numero de vertices, contando o centro
-# define CIRCLE_RADIUS_IN  0.8 // raio do circulo interno em NDC
+# define CIRCLE_RADIUS_IN  0 // raio do circulo interno em NDC
 # define CIRCLE_RADIUS_OUT  1 // raio do circulo externo em NDC
 
 # define M_PI           3.14159265358979323846  // pi
 # define CIRCLE_SIDES  (CIRCLE_VERTEX+2)
 
+# define PortalAnimationSpeed 15.0
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -696,7 +697,7 @@ int main(int argc, char* argv[])
 
             model = Matrix_Translate(Portal1Bbox.bbox_min.x,Portal1Bbox.bbox_min.y,Portal1Bbox.bbox_min.z)
              * Matrix_Rotate(Portal1Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
-             * Matrix_Scale(5, 5, 1);
+             * Matrix_Scale(std::min((time - lastPortal1Time)*PortalAnimationSpeed, 5.0), std::min((time - lastPortal1Time)*PortalAnimationSpeed, 5.0), 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMLEFT);
             DrawVirtualObject("Portal1");
@@ -762,7 +763,7 @@ int main(int argc, char* argv[])
 
             model = Matrix_Translate(Portal2Bbox.bbox_min.x,Portal2Bbox.bbox_min.y,Portal2Bbox.bbox_min.z)
              * Matrix_Rotate(Portal2Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
-             * Matrix_Scale(5, 5, 1);
+             * Matrix_Scale(std::min((time - lastPortal2Time)*PortalAnimationSpeed, 5.0), std::min((time - lastPortal2Time)*PortalAnimationSpeed, 5.0), 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, AIMRIGHT);
             DrawVirtualObject("Portal2");
