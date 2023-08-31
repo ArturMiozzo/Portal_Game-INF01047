@@ -252,12 +252,17 @@ GLint g_bbox_max_uniform;
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
+float width = 50.0f;
+float height = 5.0f;
+
 bool Portal1Created = false;
 bbox Portal1Bbox;
 bool Portal2Created = false;
 bbox Portal2Bbox;
 double lastPortal1Time = 0;
 double lastPortal2Time = 0;
+
+bool blockMove = false;
 
 int main(int argc, char* argv[])
 {
@@ -381,6 +386,29 @@ int main(int argc, char* argv[])
     glm::vec4 camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
 
+    std::vector<bbox> wallList;
+
+    bbox wall1;
+    wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
+    wall1.bbox_max = glm::vec4(width, height, -width, 0);
+
+    bbox wall2;
+    wall2.bbox_min = glm::vec4(-width, 0, -width, 0);
+    wall2.bbox_max = glm::vec4(-width, height, width, 0);
+
+    bbox wall3;
+    wall3.bbox_min = glm::vec4(-width, 0, width, 0);
+    wall3.bbox_max = glm::vec4(width, height, width, 0);
+
+    bbox wall4;
+    wall4.bbox_min = glm::vec4(width, 0, -width, 0);
+    wall4.bbox_max = glm::vec4(width, height, width, 0);
+
+    wallList.push_back(wall1);
+    wallList.push_back(wall2);
+    wallList.push_back(wall3);
+    wallList.push_back(wall4);
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
     {
@@ -413,11 +441,6 @@ int main(int argc, char* argv[])
         float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
         float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
-
-        // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-
-
         //glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         //glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_view_vector = glm::vec4(-x,-y,-z,0.0f);
@@ -425,7 +448,112 @@ int main(int argc, char* argv[])
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+        glm::vec4 lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
+
         glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed);
+
+        blockMove = false;
+
+        for (int i=0; i<wallList.size(); i++)
+        {
+            glm::vec4 point;
+            if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
+            {
+                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                               camera_position_c, camera_view_vector, point))
+                {
+                    lastPortal1Time = time;
+
+                    float deslX;
+                    float deslZ;
+                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(wallList[i].bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(wallList[i].bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+                    Portal1Created = true;
+                    Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal1Bbox.angle = angle;
+                }
+            }
+
+            if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
+            {
+
+                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                                 camera_position_c, camera_view_vector, point))
+                {
+                    lastPortal2Time = time;
+
+                    float deslX;
+                    float deslZ;
+                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(wallList[i].bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(wallList[i].bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+                    Portal2Created = true;
+                    Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal2Bbox.angle = angle;
+                }
+            }
+
+            bbox wallHitbox;
+            wallHitbox.bbox_min = wallList[i].bbox_min;
+            wallHitbox.bbox_max = wallList[i].bbox_max;
+
+            wallHitbox.bbox_max.x+=1;
+            wallHitbox.bbox_min.x-=1;
+            wallHitbox.bbox_max.z+=1;
+            wallHitbox.bbox_min.z-=1;
+
+            if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
+            {
+                blockMove = true;
+            }
+        }
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
@@ -470,9 +598,6 @@ int main(int argc, char* argv[])
         #define PORTALGUN  3
         #define AIMLEFT  4
         #define AIMRIGHT  5
-
-        float width = 50.0f;
-        float height = 5.0f;
 
         glm::mat4 identity = Matrix_Identity();
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
@@ -524,118 +649,6 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        std::vector<bbox> wallList;
-
-        bbox wall1;
-        wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
-        wall1.bbox_max = glm::vec4(width, height, -width, 0);
-
-        bbox wall2;
-        wall2.bbox_min = glm::vec4(-width, 0, -width, 0);
-        wall2.bbox_max = glm::vec4(-width, height, width, 0);
-
-        bbox wall3;
-        wall3.bbox_min = glm::vec4(-width, 0, width, 0);
-        wall3.bbox_max = glm::vec4(width, height, width, 0);
-
-        bbox wall4;
-        wall4.bbox_min = glm::vec4(width, 0, -width, 0);
-        wall4.bbox_max = glm::vec4(width, height, width, 0);
-
-        wallList.push_back(wall1);
-        wallList.push_back(wall2);
-        wallList.push_back(wall3);
-        wallList.push_back(wall4);
-
-        for (int i=0; i<wallList.size(); i++)
-        {
-            glm::vec4 point;
-            if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
-            {
-                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
-                               camera_position_c, camera_view_vector, point))
-                {
-                    lastPortal1Time = time;
-
-                    float deslX;
-                    float deslZ;
-                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
-
-                    if(angle<0.1) angle = 0;
-
-                    if(cos(angle)>0.01)
-                    {
-                        deslX = 0;
-                        deslZ = 0.01;
-
-                        if(wallList[i].bbox_min.z>0)
-                            deslZ = deslZ * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-                    else
-                    {
-                        deslX = 0.01;
-                        deslZ = 0;
-
-                        if(wallList[i].bbox_min.x>0)
-                            deslX = deslX * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-
-
-
-                    Portal1Created = true;
-                    Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal1Bbox.angle = angle;
-                }
-            }
-
-            if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
-            {
-
-                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
-                                 camera_position_c, camera_view_vector, point))
-                {
-                    lastPortal2Time = time;
-
-                    float deslX;
-                    float deslZ;
-                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
-
-                    if(angle<0.1) angle = 0;
-
-                    if(cos(angle)>0.01)
-                    {
-                        deslX = 0;
-                        deslZ = 0.01;
-
-                        if(wallList[i].bbox_min.z>0)
-                            deslZ = deslZ * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-                    else
-                    {
-                        deslX = 0.01;
-                        deslZ = 0;
-
-                        if(wallList[i].bbox_min.x>0)
-                            deslX = deslX * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-
-                    Portal2Created = true;
-                    Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal2Bbox.angle = angle;
-                }
-            }
-        }
-
         if(Portal1Created)
         {
             bbox hitBoxPortal1;
@@ -667,6 +680,8 @@ int main(int argc, char* argv[])
             {
                 if(Portal2Created)
                 {
+                    blockMove = false;
+
                     float angleCorrection = (Portal1Bbox.angle - Portal2Bbox.angle) + M_PI * cos(Portal1Bbox.angle - Portal2Bbox.angle);
 
                     if(angleCorrection == -0.0) angleCorrection = 0.0;
@@ -733,6 +748,8 @@ int main(int argc, char* argv[])
             {
                if(Portal1Created)
                 {
+                    blockMove = false;
+
                     float angleCorrection = (Portal2Bbox.angle - Portal1Bbox.angle) + M_PI * cos(Portal2Bbox.angle - Portal1Bbox.angle);
 
                     if(angleCorrection == -0.0) angleCorrection = 0.0;
@@ -769,6 +786,7 @@ int main(int argc, char* argv[])
             DrawVirtualObject("Portal2");
         }
 
+        if(blockMove) camera_position_c = lastCameraPos;
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
