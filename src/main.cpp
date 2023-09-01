@@ -132,7 +132,8 @@ void PopMatrix(glm::mat4& M);
 // logo após a definição de main() neste arquivo.
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
-void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
+void LoadPhongShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
+void LoadGouraudShadersFromFiles();
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
@@ -293,7 +294,7 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(1600, 1200, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
+    window = glfwCreateWindow(1600, 1200, "Portal", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -335,7 +336,7 @@ int main(int argc, char* argv[])
     // Carregamos os shaders de vértices e de fragmentos que serão utilizados
     // para renderização. Veja slides 180-200 do documento Aula_03_Rendering_Pipeline_Grafico.pdf.
     //
-    LoadShadersFromFiles();
+    LoadPhongShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/floor.jpg");      // TextureImage0
@@ -357,13 +358,18 @@ int main(int argc, char* argv[])
     ComputeNormals(&roofmodel);
     BuildTrianglesAndAddToVirtualScene(&roofmodel);
 
-    ObjModel gunmodel("../../data/Portal Gun.obj");
-    ComputeNormals(&gunmodel);
-    BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
 
     BuildAim();
 
     BuildPortal();
+
+    LoadGouraudShadersFromFiles();
+    ObjModel gunmodel("../../data/Portal Gun.obj");
+    ComputeNormals(&gunmodel);
+    BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    LoadPhongShadersFromFiles();
 
     if ( argc > 1 )
     {
@@ -978,7 +984,7 @@ void DrawVirtualObject(const char* object_name)
 // Função que carrega os shaders de vértices e de fragmentos que serão
 // utilizados para renderização. Veja slides 180-200 do documento Aula_03_Rendering_Pipeline_Grafico.pdf.
 //
-void LoadShadersFromFiles()
+void LoadPhongShadersFromFiles()
 {
     // Note que o caminho para os arquivos "shader_vertex.glsl" e
     // "shader_fragment.glsl" estão fixados, sendo que assumimos a existência
@@ -1026,7 +1032,31 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUseProgram(0);
 }
+void LoadGouraudShadersFromFiles()
+{
+    GLuint vertex_shader_id = LoadShader_Vertex("../../src/gouraud_vertex.glsl");
+    GLuint fragment_shader_id = LoadShader_Fragment("../../src/gouraud_fragment.glsl");
 
+    // Deletamos o programa de GPU anterior, caso ele exista.
+    if ( g_GpuProgramID != 0 )
+        glDeleteProgram(g_GpuProgramID);
+
+    // Criamos um programa de GPU utilizando os shaders carregados acima.
+    g_GpuProgramID = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
+
+    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
+    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
+    // (GPU)! Veja arquivo "shader_vertex.glsl" e "shader_fragment.glsl".
+    g_model_uniform      = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
+    g_view_uniform       = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
+    g_projection_uniform = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    g_object_id_uniform  = glGetUniformLocation(g_GpuProgramID, "object_id"); // Variável "object_id" em shader_fragment.glsl
+    g_bbox_min_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_min");
+    g_bbox_max_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_max");
+
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
+    glUseProgram(0);
+}
 // Função que pega a matriz M e guarda a mesma no topo da pilha
 void PushMatrix(glm::mat4 M)
 {
@@ -1870,7 +1900,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // Se o usuário apertar a tecla R, recarregamos os shaders dos arquivos "shader_fragment.glsl" e "shader_vertex.glsl".
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
-        LoadShadersFromFiles();
+        LoadPhongShadersFromFiles();
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
     }

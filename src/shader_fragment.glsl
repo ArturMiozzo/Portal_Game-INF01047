@@ -173,12 +173,12 @@ void main()
 
     if(object_id == AIMRIGHT || object_id == AIMLEFT)
     {
-        color = Kd0;// * (lambert + 0.01);
+        color.rgb = Kd0;// * (lambert + 0.01);
     }
-    else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
+    else color.rgb = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    color.rgb = pow(color, vec3(1.0,1.0,1.0)/2.2);
 }
 

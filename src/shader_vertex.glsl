@@ -46,7 +46,6 @@ void main()
     //     gl_Position.z = model_coefficients.z;
     //     gl_Position.w = model_coefficients.w;
     //
-
     // Agora definimos outros atributos dos vértices que serão interpolados pelo
     // rasterizador para gerar atributos únicos para cada fragmento gerado.
 
