@@ -6,8 +6,8 @@
 // "shader_vertex.glsl" e "main.cpp".
 in vec4 position_world;
 in vec4 normal;
-in vec3 cor_interpolada_pelo_rasterizador;
-
+//in vec3 cor_interpolada_pelo_rasterizador;
+in vec3 cor_v;
 // Posição do vértice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
 
@@ -94,10 +94,10 @@ void main()
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TextureFloor, vec2(U,V)).rgb;
         // Propriedades espectrais do chão
-        Kd = vec3(0.2,0.2,0.2);
+        /*Kd = vec3(0.2,0.2,0.2);
         Ks = vec3(0.3,0.3,0.3);
         Ka = vec3(0.0,0.0,0.0);
-        q = 20.0;
+        q = 20.0;*/
     }
     else if ( object_id == WALL )
     {
@@ -173,12 +173,16 @@ void main()
 
     if(object_id == AIMRIGHT || object_id == AIMLEFT)
     {
-        color.rgb = Kd0;// * (lambert + 0.01);
+        color = Kd0;// * (lambert + 0.01);
     }
-    else color.rgb = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
+    else if(object_id == FLOOR)
+    {
+        color = Kd0*cor_v;
+    }
+    else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color.rgb = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 }
 

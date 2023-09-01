@@ -11,6 +11,13 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform vec4 bbox_min;
+uniform vec4 bbox_max;
+//uniform sampler2D TexturePortalGun;
+uniform sampler2D TextureFloor;
+
+uniform int object_id;
+
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
@@ -19,7 +26,9 @@ out vec4 position_world;
 out vec4 position_model;
 out vec4 normal;
 out vec2 texcoords;
-
+out vec3 cor_v;
+#define FLOOR 0
+#define PORTALGUN 3
 void main()
 {
     // A variável gl_Position define a posição final de cada vértice
@@ -62,5 +71,109 @@ void main()
 
     // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
     texcoords = texture_coefficients;
+
+    if(object_id == FLOOR)
+    {
+        vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
+
+        vec4 camera_position = inverse(view) * origin;
+
+        vec4 p = position_world;
+
+        vec4 n = normalize(normal);
+
+        vec4 l = normalize(vec4(1.0,1.0,1.0,0.0));
+
+        vec4 v = normalize(camera_position - p);
+
+        vec4 r = -1*l+2*n*(dot(n,l));
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        /*float U = texcoords.x*5 - floor(texcoords.x*5);
+        float V = texcoords.y*5 - floor(texcoords.y*5);
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        vec3 Kd0 = texture(TextureFloor, vec2(U,V)).rgb;*/
+        // Propriedades espectrais do chão
+        vec3 Kd = vec3(0.2,0.2,0.2);
+        vec3 Ks = vec3(0.3,0.3,0.3);
+        vec3 Ka = vec3(0.0,0.0,0.0);
+        float q = 20.0;
+
+        // Espectro da fonte de iluminação
+        vec3 I = vec3(1.0,1.0,1.0);
+
+        // Espectro da luz ambiente
+        vec3 Ia = vec3(0.5,0.5,0.5);
+
+        // Termo difuso utilizando a lei dos cossenos de Lambert
+        vec3 lambert_diffuse_term = Kd*I*(max(0,dot(n,l)));
+
+        // Termo ambiente
+        vec3 ambient_term = Ka*Ia;
+
+        // Termo especular utilizando o modelo de iluminação de Phong
+        vec3 phong_specular_term  = Ks*I*pow(max(0,(dot(r,v))),q);
+
+        // Equação de Iluminação
+        float lambert = max(0,dot(n,l));
+
+        cor_v = (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
+    }
+    /*if(object_id == PORTALGUN) //PORTAL GUN
+    {
+        vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
+
+        vec4 camera_position = inverse(view) * origin;
+
+        vec4 p = position_world;
+
+        vec4 n = normalize(normal);
+
+        vec4 l = normalize(vec4(1.0,1.0,1.0,0.0));
+
+        vec4 v = normalize(camera_position - p);
+
+        vec4 r = -1*l+2*n*(dot(n,l));
+
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        float U = (position_model.x-minx)/(maxx-minx);
+        float V = (position_model.y-miny)/(maxy-miny);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        vec3 Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
+        vec3 Kd = vec3(1.0,1.0,1.0);
+        vec3 Ks = vec3(1.0,1.0,1.0);
+        vec3 Ka = vec3(0.1,0.1,0.1);
+        float q = 32.0;
+
+        // Espectro da fonte de iluminação
+        vec3 I = vec3(1.0,1.0,1.0);
+
+        // Espectro da luz ambiente
+        vec3 Ia = vec3(0.5,0.5,0.5);
+
+        // Termo difuso utilizando a lei dos cossenos de Lambert
+        vec3 lambert_diffuse_term = Kd*I*(max(0,dot(n,l)));
+
+        // Termo ambiente
+        vec3 ambient_term = Ka*Ia;
+
+        // Termo especular utilizando o modelo de iluminação de Phong
+        vec3 phong_specular_term  = Ks*I*pow(max(0,(dot(r,v))),q);
+
+        // Equação de Iluminação
+        float lambert = max(0,dot(n,l));
+
+        cor_v = Kd0*(lambert_diffuse_term + ambient_term + phong_specular_term)*10;
+
+    }*/
+    else cor_v = vec3(0.0, 0.0, 0.0);
 }
 
