@@ -369,15 +369,6 @@ int main(int argc, char* argv[])
     BuildAim();
 
     BuildPortal();
-    std::cout << 3*height/2.0 << std::endl;
-    //LoadGouraudShadersFromFiles();
-    ObjModel gunmodel("../../data/Portal Gun.obj");
-    ComputeNormals(&gunmodel);
-    BuildTrianglesAndAddToVirtualScene(&gunmodel);
-
-    BuildAim();
-
-    BuildPortal();
 
     //LoadGouraudShadersFromFiles();
     ObjModel gunmodel("../../data/Portal Gun.obj");
@@ -449,7 +440,6 @@ int main(int argc, char* argv[])
     wallList.push_back(wall6);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
-
     while (!glfwWindowShouldClose(window))
     {
         // Aqui executamos as operações de renderização
@@ -461,6 +451,7 @@ int main(int argc, char* argv[])
         //
         //           R     G     B     A
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
         double time = glfwGetTime();
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,

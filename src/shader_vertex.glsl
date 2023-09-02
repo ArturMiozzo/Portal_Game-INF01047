@@ -21,8 +21,6 @@ uniform sampler2D TextureWall;
 uniform sampler2D TextureRoof;
 uniform sampler2D TexturePortalGun;
 
-uniform int object_id;
-
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
@@ -129,62 +127,11 @@ void main()
 
         cor_v = (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
     }
-    /*if(object_id == PORTALGUN) //PORTAL GUN
+    else if(object_id == PORTALGUN) //PORTAL GUN
     {
-        vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
-
-        vec4 camera_position = inverse(view) * origin;
-
-        vec4 p = position_world;
-
-        vec4 n = normalize(normal);
-
-        vec4 l = normalize(vec4(1.0,1.0,1.0,0.0));
-
-        vec4 v = normalize(camera_position - p);
-
-        vec4 r = -1*l+2*n*(dot(n,l));
-
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
-
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
-
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
-
-        float U = (position_model.x-minx)/(maxx-minx);
-        float V = (position_model.y-miny)/(maxy-miny);
-
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-        vec3 Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
-        vec3 Kd = vec3(1.0,1.0,1.0);
-        vec3 Ks = vec3(1.0,1.0,1.0);
-        vec3 Ka = vec3(0.1,0.1,0.1);
-        float q = 32.0;
-
-        // Espectro da fonte de iluminação
-        vec3 I = vec3(1.0,1.0,1.0);
-
-        // Espectro da luz ambiente
-        vec3 Ia = vec3(0.5,0.5,0.5);
-
-        // Termo difuso utilizando a lei dos cossenos de Lambert
-        vec3 lambert_diffuse_term = Kd*I*(max(0,dot(n,l)));
-
-        // Termo ambiente
-        vec3 ambient_term = Ka*Ia;
-
-        // Termo especular utilizando o modelo de iluminação de Phong
-        vec3 phong_specular_term  = Ks*I*pow(max(0,(dot(r,v))),q);
-
-        // Equação de Iluminação
-        float lambert = max(0,dot(n,l));
-
-        cor_v = Kd0*(lambert_diffuse_term + ambient_term + phong_specular_term)*10;
-
-    }*/
+        cor_v = texture(TexturePortalGun, texture_coefficients).rgb;
+    }
     else cor_v = vec3(0.0, 0.0, 0.0);
 }
 
