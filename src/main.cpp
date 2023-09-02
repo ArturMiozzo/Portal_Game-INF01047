@@ -271,6 +271,10 @@ GLint g_light_position_uniform;
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
+
+glm::vec4 camera_position_c;
+glm::vec4 last_camera_position_c;
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -395,7 +399,7 @@ int main(int argc, char* argv[])
     glFrontFace(GL_CCW);
 
     float r = g_CameraDistance;
-    glm::vec4 camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
+    camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
 
     std::vector<bbox> wallList;
@@ -475,125 +479,139 @@ int main(int argc, char* argv[])
         //glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_view_vector = glm::vec4(-x,-y,-z,0.0f);
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f);
 
+        glm::mat4 view;
+        glm::vec4 lastCameraPos;
+
+        if(isLookAt)
+        {
+            camera_view_vector = camera_lookat_l - camera_position_c;
+            camera_position_c  = glm::vec4(x,y,z,1.0f);
+            view = Matrix_Camera_View_Look_At(camera_position_c, camera_view_vector, camera_up_vector);
+        }
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
-
-        glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip);
-        //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
-        blockMove = false;
-
-        if(detectColision(camera_position_c, holeIn.bbox_min, holeIn.bbox_max))
+        else
         {
-            blockMove = true;
-        }
+            lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
 
-        if(detectColision(camera_position_c, holeOut.bbox_min, holeOut.bbox_max))
-        {
-            blockMove = true;
-        }
+            view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip);
+            //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
+            blockMove = false;
 
-        for (int i=0; i<wallList.size(); i++)
-        {
-            glm::vec4 point;
-            if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
-            {
-                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
-                               camera_position_c, camera_view_vector, point))
-                {
-                    lastPortal1Time = time;
-
-                    float deslX;
-                    float deslZ;
-                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
-
-                    if(angle<0.1) angle = 0;
-
-                    if(cos(angle)>0.01)
-                    {
-                        deslX = 0;
-                        deslZ = 0.01;
-
-                        if(wallList[i].bbox_min.z>0)
-                            deslZ = deslZ * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-                    else
-                    {
-                        deslX = 0.01;
-                        deslZ = 0;
-
-                        if(wallList[i].bbox_min.x>0)
-                            deslX = deslX * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-
-                    Portal1Created = true;
-                    Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal1Bbox.angle = angle;
-                }
-            }
-
-            if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
-            {
-
-                if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
-                                 camera_position_c, camera_view_vector, point))
-                {
-                    lastPortal2Time = time;
-
-                    float deslX;
-                    float deslZ;
-                    float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
-
-                    if(angle<0.1) angle = 0;
-
-                    if(cos(angle)>0.01)
-                    {
-                        deslX = 0;
-                        deslZ = 0.01;
-
-                        if(wallList[i].bbox_min.z>0)
-                            deslZ = deslZ * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-                    else
-                    {
-                        deslX = 0.01;
-                        deslZ = 0;
-
-                        if(wallList[i].bbox_min.x>0)
-                            deslX = deslX * -1;
-                        else
-                            angle = angle + M_PI;
-                    }
-
-                    Portal2Created = true;
-                    Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal2Bbox.angle = angle;
-                }
-            }
-
-            bbox wallHitbox;
-            wallHitbox.bbox_min = wallList[i].bbox_min;
-            wallHitbox.bbox_max = wallList[i].bbox_max;
-
-            wallHitbox.bbox_max.x+=1;
-            wallHitbox.bbox_min.x-=1;
-            wallHitbox.bbox_max.z+=1;
-            wallHitbox.bbox_min.z-=1;
-
-            if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
+            if(detectColision(camera_position_c, holeIn.bbox_min, holeIn.bbox_max))
             {
                 blockMove = true;
             }
+
+            if(detectColision(camera_position_c, holeOut.bbox_min, holeOut.bbox_max))
+            {
+                blockMove = true;
+            }
+
+            for (int i=0; i<wallList.size(); i++)
+            {
+                glm::vec4 point;
+                if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
+                {
+                    if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                                    camera_position_c, camera_view_vector, point))
+                    {
+                        lastPortal1Time = time;
+
+                        float deslX;
+                        float deslZ;
+                        float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+
+                        if(angle<0.1) angle = 0;
+
+                        if(cos(angle)>0.01)
+                        {
+                            deslX = 0;
+                            deslZ = 0.01;
+
+                            if(wallList[i].bbox_min.z>0)
+                                deslZ = deslZ * -1;
+                            else
+                                angle = angle + M_PI;
+                        }
+                        else
+                        {
+                            deslX = 0.01;
+                            deslZ = 0;
+
+                            if(wallList[i].bbox_min.x>0)
+                                deslX = deslX * -1;
+                            else
+                                angle = angle + M_PI;
+                        }
+
+                        Portal1Created = true;
+                        Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                        Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                        Portal1Bbox.angle = angle;
+                    }
+                }
+
+                if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
+                {
+
+                    if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                                    camera_position_c, camera_view_vector, point))
+                    {
+                        lastPortal2Time = time;
+
+                        float deslX;
+                        float deslZ;
+                        float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+
+                        if(angle<0.1) angle = 0;
+
+                        if(cos(angle)>0.01)
+                        {
+                            deslX = 0;
+                            deslZ = 0.01;
+
+                            if(wallList[i].bbox_min.z>0)
+                                deslZ = deslZ * -1;
+                            else
+                                angle = angle + M_PI;
+                        }
+                        else
+                        {
+                            deslX = 0.01;
+                            deslZ = 0;
+
+                            if(wallList[i].bbox_min.x>0)
+                                deslX = deslX * -1;
+                            else
+                                angle = angle + M_PI;
+                        }
+
+                        Portal2Created = true;
+                        Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                        Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                        Portal2Bbox.angle = angle;
+                    }
+                }
+
+                bbox wallHitbox;
+                wallHitbox.bbox_min = wallList[i].bbox_min;
+                wallHitbox.bbox_max = wallList[i].bbox_max;
+
+                wallHitbox.bbox_max.x+=1;
+                wallHitbox.bbox_min.x-=1;
+                wallHitbox.bbox_max.z+=1;
+                wallHitbox.bbox_min.z-=1;
+
+                if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
+                {
+                    blockMove = true;
+                }
+            }
         }
+
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
@@ -2022,6 +2040,21 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     {
         noclip = (noclip == false) ? true : false;
     }
+    if (key == GLFW_KEY_L && action == GLFW_PRESS)
+    {
+
+        if(isLookAt)
+        {
+            camera_position_c = last_camera_position_c;
+            isLookAt = false;
+        }
+        else
+        {
+            last_camera_position_c = camera_position_c;
+            isLookAt = true;
+        }
+    }
+
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal

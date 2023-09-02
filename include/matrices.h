@@ -278,6 +278,37 @@ glm::mat4 Matrix_Camera_View(glm::vec4* position_c, glm::vec4 view_vector, glm::
     );
 }
 
+glm::mat4 Matrix_Camera_View_Look_At(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
+{
+    glm::vec4 w = -view_vector;
+    glm::vec4 u = crossproduct(up_vector, w);
+
+    // Normalizamos os vetores u e w
+    w = w / norm(w);
+    u = u / norm(u);
+
+    glm::vec4 v = crossproduct(w,u);
+
+    glm::vec4 origin_o = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    float ux = u.x;
+    float uy = u.y;
+    float uz = u.z;
+    float vx = v.x;
+    float vy = v.y;
+    float vz = v.z;
+    float wx = w.x;
+    float wy = w.y;
+    float wz = w.z;
+
+    return Matrix(
+        ux   , uy   , uz   , -dotproduct(u , position_c - origin_o) ,
+        vx   , vy   , vz   , -dotproduct(v , position_c - origin_o) ,
+        wx   , wy   , wz   , -dotproduct(w , position_c - origin_o) ,
+        0.0f , 0.0f , 0.0f , 1.0f
+    );
+}
+
 // Matriz de projeção paralela ortográfica
 glm::mat4 Matrix_Orthographic(float l, float r, float b, float t, float n, float f)
 {
