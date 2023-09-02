@@ -221,7 +221,7 @@ float dotproduct(glm::vec4 u, glm::vec4 v)
 }
 
 // Matriz de mudança de coordenadas para o sistema de coordenadas da Câmera.
-glm::mat4 Matrix_Camera_View(glm::vec4* position_c, glm::vec4 view_vector, glm::vec4 up_vector, bool b_fw, bool b_back, bool b_right, bool b_left, float speed)
+glm::mat4 Matrix_Camera_View(glm::vec4* position_c, glm::vec4 view_vector, glm::vec4 up_vector, bool b_fw, bool b_back, bool b_right, bool b_left, float speed, bool noclip)
 {
     glm::vec4 w = -view_vector;
     glm::vec4 u = crossproduct(up_vector, w);
@@ -244,8 +244,12 @@ glm::mat4 Matrix_Camera_View(glm::vec4* position_c, glm::vec4 view_vector, glm::
     float wy = w.y;
     float wz = w.z;
 
-    w.y = 0;
-    u.y = 0;
+    if(!noclip)
+    {
+        w.y = 0;
+        u.y = 0;
+    }
+
     if(b_fw)
     {
         *position_c += (-w * speed);

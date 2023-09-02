@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 
 // Headers abaixo são específicos de C++
 #include <map>
@@ -220,11 +221,14 @@ float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
+bool isLookAt = false;
+
 // botoes w a s d
 bool b_forward = false;
 bool b_right = false;
 bool b_back = false;
 bool b_left = false;
+bool noclip = false;
 float speed = 0.3;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
@@ -262,6 +266,7 @@ GLint g_projection_uniform;
 GLint g_object_id_uniform;
 GLint g_bbox_min_uniform;
 GLint g_bbox_max_uniform;
+GLint g_light_position_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -364,6 +369,15 @@ int main(int argc, char* argv[])
     BuildAim();
 
     BuildPortal();
+    std::cout << 3*height/2.0 << std::endl;
+    //LoadGouraudShadersFromFiles();
+    ObjModel gunmodel("../../data/Portal Gun.obj");
+    ComputeNormals(&gunmodel);
+    BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    BuildAim();
+
+    BuildPortal();
 
     //LoadGouraudShadersFromFiles();
     ObjModel gunmodel("../../data/Portal Gun.obj");
@@ -435,6 +449,7 @@ int main(int argc, char* argv[])
     wallList.push_back(wall6);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
+
     while (!glfwWindowShouldClose(window))
     {
         // Aqui executamos as operações de renderização
@@ -446,7 +461,6 @@ int main(int argc, char* argv[])
         //
         //           R     G     B     A
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
         double time = glfwGetTime();
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
@@ -475,8 +489,8 @@ int main(int argc, char* argv[])
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
         glm::vec4 lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
 
-        glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed);
-
+        glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip);
+        //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
         blockMove = false;
 
         if(detectColision(camera_position_c, holeIn.bbox_min, holeIn.bbox_max))
@@ -626,7 +640,7 @@ int main(int argc, char* argv[])
         // efetivamente aplicadas em todos os pontos.
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-
+        glUniform4f(g_light_position_uniform, 0.0f, 3.5f, 0.0f, 1.0f);
         #define FLOOR 0
         #define WALL  1
         #define ROOF  2
@@ -1014,6 +1028,8 @@ void DrawVirtualObject(const char* object_name)
     glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
     glUniform4f(g_bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
     glUniform4f(g_bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
+    glUniform4f(g_light_position_uniform, 0.0f, 3.5f, 0.0f, 1.0f);
+
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -1074,6 +1090,7 @@ void LoadShadersFromFiles()
     g_object_id_uniform  = glGetUniformLocation(g_GpuProgramID, "object_id"); // Variável "object_id" em shader_fragment.glsl
     g_bbox_min_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_min");
     g_bbox_max_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_max");
+    g_light_position_uniform = glGetUniformLocation(g_GpuProgramID, "light_position");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);
@@ -1995,6 +2012,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_A && action == GLFW_RELEASE)
     {
         b_left = false;
+    }
+    if (key == GLFW_KEY_V && action == GLFW_PRESS)
+    {
+        noclip = (noclip == false) ? true : false;
     }
 }
 

@@ -6,8 +6,8 @@
 // "shader_vertex.glsl" e "main.cpp".
 in vec4 position_world;
 in vec4 normal;
-//in vec3 cor_interpolada_pelo_rasterizador;
 in vec3 cor_v;
+
 // Posição do vértice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
 
@@ -32,6 +32,7 @@ uniform int object_id;
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 bbox_min;
 uniform vec4 bbox_max;
+uniform vec4 light_position;
 
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureFloor;
@@ -65,7 +66,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(1.0,1.0,1.0,0.0));
+    vec4 l = normalize(light_position - p);
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -148,7 +149,7 @@ void main()
     vec3 Ia = vec3(0.5,0.5,0.5);
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    vec3 lambert_diffuse_term = Kd*I*(max(0,dot(n,l)));
+    vec3 lambert_diffuse_term = Kd*I*max(0,(dot(n,l)));
 
     // Termo ambiente
     vec3 ambient_term = Ka*Ia;
@@ -166,6 +167,12 @@ void main()
     else if(object_id == FLOOR)
     {
         color = Kd0*cor_v;
+    }
+    else if(object_id == ROOF)
+    {
+        color = Kd0 * (lambert_diffuse_term + ambient_term);
+        //color = Kd0 * (lambert_diffuse_term + ambient_term);//(phong_specular_term + ambient_term);
+        //color = Kd0; //* lambert_diffuse_term*10;
     }
     else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
 
