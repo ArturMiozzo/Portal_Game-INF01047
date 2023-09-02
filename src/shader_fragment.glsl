@@ -125,20 +125,8 @@ void main()
     }
     else if ( object_id == PORTALGUN )
     {
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
-
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
-
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
-
-        U = (position_model.x-minx)/(maxx-minx);
-        V = (position_model.y-miny)/(maxy-miny);
-
-        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-        Kd0 = texture(TexturePortalGun, vec2(U,V)).rgb;
+        // A cor é obtida no shader_vertex
+        Kd0 = cor_v;
         Kd = vec3(1.0,1.0,1.0);
         Ks = vec3(1.0,1.0,1.0);
         Ka = vec3(0.1,0.1,0.1);
