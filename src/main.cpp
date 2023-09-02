@@ -199,6 +199,19 @@ std::map<std::string, SceneObject> g_VirtualScene;
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4>  g_MatrixStack;
 
+float width = 50.0f;
+float height = 5.0f;
+float spaceDistance = 10.0f;
+
+bool Portal1Created = false;
+bbox Portal1Bbox;
+bool Portal2Created = false;
+bbox Portal2Bbox;
+double lastPortal1Time = 0;
+double lastPortal2Time = 0;
+
+bool blockMove = false;
+
 // Razão de proporção da janela (largura/altura). Veja função FramebufferSizeCallback().
 float g_ScreenRatio = 1.0f;
 
@@ -225,7 +238,7 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+float g_CameraDistance = width/2; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
@@ -252,18 +265,6 @@ GLint g_bbox_max_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
-
-float width = 50.0f;
-float height = 5.0f;
-
-bool Portal1Created = false;
-bbox Portal1Bbox;
-bool Portal2Created = false;
-bbox Portal2Bbox;
-double lastPortal1Time = 0;
-double lastPortal2Time = 0;
-
-bool blockMove = false;
 
 int main(int argc, char* argv[])
 {
@@ -399,7 +400,7 @@ int main(int argc, char* argv[])
     wall1.bbox_max = glm::vec4(width, height, -width, 0);
 
     bbox wall2;
-    wall2.bbox_min = glm::vec4(-width, 0, -width, 0);
+    wall2.bbox_min = glm::vec4(-width, 0, spaceDistance, 0);
     wall2.bbox_max = glm::vec4(-width, height, width, 0);
 
     bbox wall3;
@@ -407,13 +408,31 @@ int main(int argc, char* argv[])
     wall3.bbox_max = glm::vec4(width, height, width, 0);
 
     bbox wall4;
-    wall4.bbox_min = glm::vec4(width, 0, -width, 0);
+    wall4.bbox_min = glm::vec4(width, 0, spaceDistance, 0);
     wall4.bbox_max = glm::vec4(width, height, width, 0);
+
+    bbox wall5;
+    wall5.bbox_min = glm::vec4(-width, 0, -width, 0);
+    wall5.bbox_max = glm::vec4(-width, height, -spaceDistance, 0);
+
+    bbox wall6;
+    wall6.bbox_min = glm::vec4(width, 0, -width, 0);
+    wall6.bbox_max = glm::vec4(width, height, -spaceDistance, 0);
+
+    bbox holeIn;
+    holeIn.bbox_min = glm::vec4(-width-1, 0, -spaceDistance-1, 0);
+    holeIn.bbox_max = glm::vec4(width+1, height, -spaceDistance+1, 0);
+
+    bbox holeOut;
+    holeOut.bbox_min = glm::vec4(-width-1, 0, spaceDistance-1, 0);
+    holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance+1, 0);
 
     wallList.push_back(wall1);
     wallList.push_back(wall2);
     wallList.push_back(wall3);
     wallList.push_back(wall4);
+    wallList.push_back(wall5);
+    wallList.push_back(wall6);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
@@ -459,6 +478,16 @@ int main(int argc, char* argv[])
         glm::mat4 view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed);
 
         blockMove = false;
+
+        if(detectColision(camera_position_c, holeIn.bbox_min, holeIn.bbox_max))
+        {
+            blockMove = true;
+        }
+
+        if(detectColision(camera_position_c, holeOut.bbox_min, holeOut.bbox_max))
+        {
+            blockMove = true;
+        }
 
         for (int i=0; i<wallList.size(); i++)
         {
@@ -627,7 +656,17 @@ int main(int argc, char* argv[])
 
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
-        model = Matrix_Translate(0.0f,-height/2,0.0f)* Matrix_Scale(width, height/2, width);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
+        model = Matrix_Translate(0.0f,-height/2,width/2+spaceDistance/2)* Matrix_Scale(width, height/2, width/2-(spaceDistance/2));// * Matrix_Scale(20.0f, 20.0f, 20.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FLOOR);
+        DrawVirtualObject("the_floor");
+
+        model = Matrix_Translate(0.0f,-height/2,-width/2-spaceDistance/2) * Matrix_Scale(width, height/2, width/2-(spaceDistance/2));// * Matrix_Scale(20.0f, 20.0f, 20.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FLOOR);
+        DrawVirtualObject("the_floor");
+
+        model = Matrix_Translate(0.0f,-5*height/2,0.0f) * Matrix_Scale(width, height/2, spaceDistance);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, FLOOR);
         DrawVirtualObject("the_floor");
@@ -637,12 +676,22 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        model = Matrix_Translate(width,height/2,0.0f) * Matrix_Scale(0, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(0.0f,-3*height/2,-spaceDistance) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
 
-        model = Matrix_Translate(-width,height/2,0.0f) * Matrix_Scale(0, height, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(0.0f,-3*height/2,spaceDistance) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(-1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        model = Matrix_Translate(width,-height/2,0.0f) * Matrix_Scale(0, height*2, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,-1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        model = Matrix_Translate(-width,-height/2,0.0f) * Matrix_Scale(0, height*2, width) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(0.0f,1.0f,0.0f,0.0f)) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
         DrawVirtualObject("the_wall");
