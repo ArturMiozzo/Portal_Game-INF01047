@@ -1352,6 +1352,20 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
     glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
     glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
 
+    for (size_t vertex = 0; vertex < model_coefficients->size(); vertex+=4)
+    {
+        float vx = model_coefficients->at(vertex + 0);
+        float vy = model_coefficients->at(vertex + 1);
+        float vz = model_coefficients->at(vertex + 2);
+
+        bbox_min.x = std::min(bbox_min.x, vx);
+        bbox_min.y = std::min(bbox_min.y, vy);
+        bbox_min.z = std::min(bbox_min.z, vz);
+        bbox_max.x = std::max(bbox_max.x, vx);
+        bbox_max.y = std::max(bbox_max.y, vy);
+        bbox_max.z = std::max(bbox_max.z, vz);
+    }
+
     SceneObject theobject;
     std::string s(name);
     theobject.name           = s;
