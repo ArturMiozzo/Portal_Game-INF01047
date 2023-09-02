@@ -20,6 +20,8 @@ uniform sampler2D TextureFloor;
 uniform sampler2D TextureWall;
 uniform sampler2D TextureRoof;
 uniform sampler2D TexturePortalGun;
+uniform sampler2D TexturePortalBlue;
+uniform sampler2D TexturePortalOrange;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
@@ -34,9 +36,11 @@ out vec3 cor_v;
 #define FLOOR 0
 #define WALL  1
 #define ROOF  2
-#define PORTALGUN 3
-#define AIMLEFT  4
-#define AIMRIGHT  5
+#define PORTALGUN  3
+#define PORTAL1  4
+#define PORTAL2  5
+#define AIMLEFT  6
+#define AIMRIGHT  7
 
 void main()
 {

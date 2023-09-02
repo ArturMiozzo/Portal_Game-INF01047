@@ -353,6 +353,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/wall.jpg");      // TextureImage1
     LoadTextureImage("../../data/hard_wall.jpg");      // TextureImage2
     LoadTextureImage("../../data/portalgun_col.jpg");      // TextureImage2
+    LoadTextureImage("../../data/portal_blue.jpg");      // TextureImage2
+    LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -368,16 +370,13 @@ int main(int argc, char* argv[])
     ComputeNormals(&roofmodel);
     BuildTrianglesAndAddToVirtualScene(&roofmodel);
 
-
-
-    BuildAim();
-
-    BuildPortal();
-
     //LoadGouraudShadersFromFiles();
     ObjModel gunmodel("../../data/Portal Gun.obj");
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    BuildAim();
+    BuildPortal();
 
     //LoadPhongShadersFromFiles();
 
@@ -654,8 +653,10 @@ int main(int argc, char* argv[])
         #define WALL  1
         #define ROOF  2
         #define PORTALGUN  3
-        #define AIMLEFT  4
-        #define AIMRIGHT  5
+        #define PORTAL1  4
+        #define PORTAL2  5
+        #define AIMLEFT  6
+        #define AIMRIGHT  7
 
         glm::mat4 identity = Matrix_Identity();
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
@@ -1107,6 +1108,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureWall"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureRoof"), 2);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
     glUseProgram(0);
 }
 void LoadGouraudShadersFromFiles()

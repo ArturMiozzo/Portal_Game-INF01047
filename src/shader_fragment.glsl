@@ -23,9 +23,11 @@ uniform mat4 projection;
 #define FLOOR 0
 #define WALL  1
 #define ROOF  2
-#define PORTALGUN 3
-#define AIMLEFT  4
-#define AIMRIGHT  5
+#define PORTALGUN  3
+#define PORTAL1  4
+#define PORTAL2  5
+#define AIMLEFT  6
+#define AIMRIGHT  7
 
 uniform int object_id;
 
@@ -39,6 +41,8 @@ uniform sampler2D TextureFloor;
 uniform sampler2D TextureWall;
 uniform sampler2D TextureRoof;
 uniform sampler2D TexturePortalGun;
+uniform sampler2D TexturePortalBlue;
+uniform sampler2D TexturePortalOrange;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -135,11 +139,37 @@ void main()
     }
     else if ( object_id == AIMLEFT )
     {
-        Kd0 = vec3(0.0,0.0,1.0);
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x-minx)/(maxx-minx);
+        V = (position_model.y-miny)/(maxy-miny);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TexturePortalBlue, vec2(U,V)).rgb;
     }
     else if ( object_id == AIMRIGHT )
     {
-        Kd0 = vec3(1.0,0.5,0.0);
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x-minx)/(maxx-minx);
+        V = (position_model.y-miny)/(maxy-miny);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TexturePortalOrange, vec2(U,V)).rgb;
     }
 
     // Espectro da fonte de iluminação
