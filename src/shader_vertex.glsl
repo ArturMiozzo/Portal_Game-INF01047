@@ -23,6 +23,7 @@ uniform sampler2D TexturePortalGun;
 uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
 uniform sampler2D TextureCompanionCube;
+uniform sampler2D TextureButton;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
@@ -42,6 +43,8 @@ out vec3 cor_v;
 #define PORTAL2  5
 #define AIMLEFT  6
 #define AIMRIGHT  7
+#define COMPANION_CUBE 8
+#define BUTTON 9
 
 void main()
 {
@@ -136,6 +139,10 @@ void main()
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         cor_v = texture(TexturePortalGun, texture_coefficients).rgb;
+    }
+    else if(object_id == BUTTON)
+    {
+        cor_v = texture(TextureButton, texture_coefficients).rgb;
     }
     else cor_v = vec3(0.0, 0.0, 0.0);
 }

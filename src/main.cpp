@@ -69,6 +69,7 @@
 #define AIMLEFT  6
 #define AIMRIGHT  7
 #define COMPANION_CUBE 8
+#define BUTTON 9
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -189,6 +190,8 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 //void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+
+
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -293,6 +296,11 @@ GLuint g_NumLoadedTextures = 0;
 glm::vec4 camera_position_c;
 glm::vec4 last_camera_position_c;
 
+
+bool isHolding = false;
+bool dropped = false;
+glm::vec4 box_position;
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -374,6 +382,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/portal_blue.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
     LoadTextureImage("../../data/metal_box.png");
+    LoadTextureImage("../../data/box_socketA.png");
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -397,6 +406,10 @@ int main(int argc, char* argv[])
     ObjModel boxmodel("../../data/Portal_Companion_Cube.obj");
     ComputeNormals(&boxmodel);
     BuildTrianglesAndAddToVirtualScene(&boxmodel);
+
+    ObjModel buttonmodel("../../data/box_socket.obj");
+    ComputeNormals(&buttonmodel);
+    BuildTrianglesAndAddToVirtualScene(&buttonmodel);
 
     BuildAim();
     BuildPortal();
@@ -491,10 +504,13 @@ int main(int argc, char* argv[])
     float t_bezier_last;
     bool isBackwards = false;
 
-    for(float i=0.0; i<=1.0; i+=0.1)
+    box_position = glm::vec4(+40.0f, -height/2 + 1, -30.0f, 1.0f);
+    glm::vec4 button_position = glm::vec4(+40.0f, -height/2 + 1, +30.0f, 1.0f);
+
+    /*for(float i=0.0; i<=1.0; i+=0.1)
     {
         PrintVector3(bezierCurve(bezierCurvePoints, i));
-    }
+    }*/
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
@@ -836,6 +852,27 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, AIMRIGHT);
         DrawVirtualObject("aimRight");
 
+        if(isHolding)
+        {
+            model = Matrix_Translate(0.0,0.0,-1) * Matrix_Scale(0.7f, 0.7f, 0.7f) * Matrix_Identity();
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, COMPANION_CUBE);
+            DrawVirtualObject("pCube2");
+            box_position = camera_position_c;
+        }
+        if(dropped)
+        {
+            box_position.y = -height/2 +1;
+            dropped = false;
+            if(isNear(box_position, button_position))
+            {
+                box_position = button_position;
+                box_position.y +=1;
+                box_position.z +=1.5;
+            }
+        }
+
+
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(view));
 
         model = Matrix_Translate(0.0f,-height/2,width/2+spaceDistance/2)* Matrix_Scale(width, height/2, width/2-(spaceDistance/2));// * Matrix_Scale(20.0f, 20.0f, 20.0f);
@@ -888,10 +925,19 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        model = Matrix_Translate(-5.0f, -height/2 + 1, +15.5f)* Matrix_Identity();
+        model = Matrix_Translate(+40.0f, -height/2 + 1, +30.0f)* Matrix_Scale(0.07, 0.07, 0.07) * Matrix_Identity();
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, COMPANION_CUBE);
-        DrawVirtualObject("pCube2");
+        glUniform1i(g_object_id_uniform, BUTTON);
+        DrawVirtualObject("g0");
+
+        if(!isHolding)
+        {
+            model = Matrix_Translate(box_position.x, box_position.y, box_position.z + 3)* Matrix_Identity();
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, COMPANION_CUBE);
+            DrawVirtualObject("pCube2");
+        }
+
 
         //printf("%f\n", ((int)(time*1000)%5000)/5000.0);
 
@@ -907,7 +953,8 @@ int main(int argc, char* argv[])
             point = bezierCurve(bezierCurvePoints, 1.0 - t_bezier);
         }
         else point = bezierCurve(bezierCurvePoints, t_bezier);
-
+        //PrintVector(camera_position_c);
+        std::cout << isNear(camera_position_c, box_position) << std::endl;
         cubePosition.x=cubePositionOrigin.x+(point.x*width);
         cubePosition.y=cubePositionOrigin.y+(point.y*height);
         cubePosition.z=cubePositionOrigin.z+(point.z*width);
@@ -1343,6 +1390,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureCompanionCube"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureButton"), 7);
     glUseProgram(0);
 }
 void LoadGouraudShadersFromFiles()
@@ -2350,6 +2398,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             last_camera_position_c = camera_position_c;
             isLookAt = true;
         }
+    }
+    if (key == GLFW_KEY_E && action == GLFW_PRESS)
+    {
+        if(isNear(camera_position_c, box_position))
+        {
+            isHolding = (isHolding == false) ? true : false;
+            if(!isHolding) dropped = true;
+        }
+
     }
 
 }

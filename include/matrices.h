@@ -309,6 +309,22 @@ glm::mat4 Matrix_Camera_View_Look_At(glm::vec4 position_c, glm::vec4 view_vector
     );
 }
 
+bool isNear(glm::vec4 camera_position_c, glm::vec4 box_position)
+{
+    int range = 8;
+    glm::vec4 res = camera_position_c - box_position;
+    float x = res.x;
+    float z = res.z;
+
+    if(x == 0 && z == 0) return true;
+    //std::cout << "x: " << x << " z: " << z << std::endl;
+    if(x*x + z*z <= range*range)
+    {
+        return true;
+    }
+    return false;
+}
+
 // Matriz de projeção paralela ortográfica
 glm::mat4 Matrix_Orthographic(float l, float r, float b, float t, float n, float f)
 {

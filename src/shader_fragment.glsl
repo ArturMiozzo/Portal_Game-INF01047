@@ -29,6 +29,7 @@ uniform mat4 projection;
 #define AIMLEFT  6
 #define AIMRIGHT  7
 #define COMPANION_CUBE 8
+#define BUTTON 9
 
 uniform int object_id;
 
@@ -45,6 +46,7 @@ uniform sampler2D TexturePortalGun;
 uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
 uniform sampler2D TextureCompanionCube;
+uniform sampler2D TextureButton;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -203,6 +205,14 @@ void main()
         Ka = vec3(0.2,0.2,0.2);
         q = 20.0;
         //color = vec3(1.0, 0.0, 0.0);
+    }
+    else if ( object_id == BUTTON)
+    {
+        Kd0 = cor_v;
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
     }
     else if ( object_id == AIMLEFT )
     {
