@@ -783,9 +783,11 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, COMPANION_CUBE);
         DrawVirtualObject("pCube2");
 
-        bezierCurve(bezierCurvePoints, ((int)time));
 
-        model = Matrix_Translate(0.0f,height/2,-25.0f) * Matrix_Scale(5, height, 1);
+        glm::vec3 point = bezierCurve(bezierCurvePoints, ((int)(time*1000)%5000)/5000.0);
+        //PrintVector3(point);
+
+        model = Matrix_Translate(0.0f+point.x,height/2+point.y,-25.0f+point.z) * Matrix_Scale(5, height, 1);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("cube");
