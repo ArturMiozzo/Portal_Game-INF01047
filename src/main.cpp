@@ -60,6 +60,15 @@
 
 # define PortalAnimationSpeed 15.0
 
+#define FLOOR 0
+#define WALL  1
+#define ROOF  2
+#define PORTALGUN  3
+#define PORTAL1  4
+#define PORTAL2  5
+#define AIMLEFT  6
+#define AIMRIGHT  7
+
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
 struct ObjModel
@@ -649,18 +658,9 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
         glUniform4f(g_light_position_uniform, 0.0f, 3.5f, 0.0f, 1.0f);
-        #define FLOOR 0
-        #define WALL  1
-        #define ROOF  2
-        #define PORTALGUN  3
-        #define PORTAL1  4
-        #define PORTAL2  5
-        #define AIMLEFT  6
-        #define AIMRIGHT  7
 
         glm::mat4 identity = Matrix_Identity();
         glUniformMatrix4fv(g_view_uniform, 1 , GL_FALSE , glm::value_ptr(identity));
-
 
         //LoadGouraudShadersFromFiles();
         model = Matrix_Translate(0.2,-0.15,-0.5) * Matrix_Scale(0.2f, 0.2f, 0.2f);
@@ -795,7 +795,7 @@ int main(int argc, char* argv[])
              * Matrix_Rotate(Portal1Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
              * Matrix_Scale(std::min((time - lastPortal1Time)*PortalAnimationSpeed, 5.0), std::min((time - lastPortal1Time)*PortalAnimationSpeed, 5.0), 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, AIMLEFT);
+            glUniform1i(g_object_id_uniform, PORTAL1);
             DrawVirtualObject("Portal1");
         }
 
@@ -863,7 +863,7 @@ int main(int argc, char* argv[])
              * Matrix_Rotate(Portal2Bbox.angle, glm::vec4(0.0f,1.0f,0.0f,0.0f))
              * Matrix_Scale(std::min((time - lastPortal2Time)*PortalAnimationSpeed, 5.0), std::min((time - lastPortal2Time)*PortalAnimationSpeed, 5.0), 1);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, AIMRIGHT);
+            glUniform1i(g_object_id_uniform, PORTAL2);
             DrawVirtualObject("Portal2");
         }
 
@@ -1140,6 +1140,8 @@ void LoadGouraudShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureWall"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureRoof"), 2);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
     glUseProgram(0);
 }
 // Função que pega a matriz M e guarda a mesma no topo da pilha

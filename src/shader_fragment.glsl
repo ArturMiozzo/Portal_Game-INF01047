@@ -137,7 +137,7 @@ void main()
         Ka = vec3(0.1,0.1,0.1);
         q = 32.0;
     }
-    else if ( object_id == AIMLEFT )
+    else if ( object_id == PORTAL1 )
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -153,8 +153,13 @@ void main()
 
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TexturePortalBlue, vec2(U,V)).rgb;
+
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
     }
-    else if ( object_id == AIMRIGHT )
+    else if ( object_id == PORTAL2 )
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -170,6 +175,19 @@ void main()
 
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd0 = texture(TexturePortalOrange, vec2(U,V)).rgb;
+
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
+    }
+    else if ( object_id == AIMLEFT )
+    {
+        Kd0 = vec3(0.0f, 0.0f, 1.0f);
+    }
+    else if ( object_id == AIMRIGHT )
+    {
+        Kd0 = vec3(1.0f, 0.5f, 0.0f);
     }
 
     // Espectro da fonte de iluminação
