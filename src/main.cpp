@@ -442,7 +442,8 @@ int main(int argc, char* argv[])
     float t_prev = glfwGetTime();
     float t_step;
 
-    std::vector<bbox> wallList;
+    std::vector<bbox> collisionList;
+    std::vector<bbox> portalList;
 
     bbox wall1;
     wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
@@ -475,21 +476,30 @@ int main(int argc, char* argv[])
     wall6.angle = boxAngle(wall6.bbox_min, wall6.bbox_max);
 
     bbox holeIn;
-    holeIn.bbox_min = glm::vec4(-width-1, 0, -spaceDistance-1, 0);
-    holeIn.bbox_max = glm::vec4(width+1, height, -spaceDistance+1, 0);
+    holeIn.bbox_min = glm::vec4(-width-1, 0, -spaceDistance, 0);
+    holeIn.bbox_max = glm::vec4(width+1, height, -spaceDistance, 0);
     holeIn.angle = boxAngle(holeIn.bbox_min, holeIn.bbox_max);
 
     bbox holeOut;
-    holeOut.bbox_min = glm::vec4(-width-1, 0, spaceDistance-1, 0);
-    holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance+1, 0);
+    holeOut.bbox_min = glm::vec4(-width-1, 0, spaceDistance, 0);
+    holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance, 0);
     holeOut.angle = boxAngle(holeOut.bbox_min, holeOut.bbox_max);
 
-    wallList.push_back(wall1);
-    wallList.push_back(wall2);
-    wallList.push_back(wall3);
-    wallList.push_back(wall4);
-    wallList.push_back(wall5);
-    wallList.push_back(wall6);
+    collisionList.push_back(wall1);
+    collisionList.push_back(wall2);
+    collisionList.push_back(wall3);
+    collisionList.push_back(wall4);
+    collisionList.push_back(wall5);
+    collisionList.push_back(wall6);
+    collisionList.push_back(holeIn);
+    collisionList.push_back(holeOut);
+
+    //portalList.push_back(wall1);
+    portalList.push_back(wall2);
+    portalList.push_back(wall3);
+    portalList.push_back(wall4);
+    //portalList.push_back(wall5);
+    //portalList.push_back(wall6);
 
     std::vector<glm::vec3> bezierCurvePoints;
 
@@ -573,14 +583,21 @@ int main(int argc, char* argv[])
             //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
             blockMove = false;
 
-            if(detectColision(camera_position_c, holeIn.bbox_min, holeIn.bbox_max))
+            for (int i=0; i<collisionList.size(); i++)
             {
-                blockMove = true;
-            }
+                bbox wallHitbox;
+                wallHitbox.bbox_min = collisionList[i].bbox_min;
+                wallHitbox.bbox_max = collisionList[i].bbox_max;
 
-            if(detectColision(camera_position_c, holeOut.bbox_min, holeOut.bbox_max))
-            {
-                blockMove = true;
+                wallHitbox.bbox_max.x+=1;
+                wallHitbox.bbox_min.x-=1;
+                wallHitbox.bbox_max.z+=1;
+                wallHitbox.bbox_min.z-=1;
+
+                if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
+                {
+                    blockMove = true;
+                }
             }
 
             bbox cubeIn;
@@ -641,7 +658,7 @@ int main(int argc, char* argv[])
 
                     float deslX;
                     float deslZ;
-                    float angle = boxAngle(cubeIn.bbox_min, cubeIn.bbox_max);
+                    float angle = cubeIn.angle;
 
                     if(angle<0.1) angle = 0;
 
@@ -674,33 +691,19 @@ int main(int argc, char* argv[])
                 }
             }
 
-            bbox wallHitbox;
-            wallHitbox.bbox_min = cubeIn.bbox_min;
-            wallHitbox.bbox_max = cubeIn.bbox_max;
-
-            wallHitbox.bbox_max.x+=1;
-            wallHitbox.bbox_min.x-=1;
-            wallHitbox.bbox_max.z+=1;
-            wallHitbox.bbox_min.z-=1;
-
-            if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
-            {
-                blockMove = true;
-            }
-
-            for (int i=0; i<wallList.size(); i++)
+            for (int i=0; i<portalList.size(); i++)
             {
                 glm::vec4 point;
                 if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
                 {
-                    if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                    if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
                                     camera_position_c, camera_view_vector, point))
                     {
                         lastPortal1Time = time;
 
                         float deslX;
                         float deslZ;
-                        float angle = wallList[i].angle;
+                        float angle = portalList[i].angle;
 
                         printf("angle %f\n", angle);
 
@@ -711,7 +714,7 @@ int main(int argc, char* argv[])
                             deslX = 0;
                             deslZ = 0.01;
 
-                            if(wallList[i].bbox_min.z>0)
+                            if(portalList[i].bbox_min.z>0)
                                 deslZ = deslZ * -1;
                             else
                                 angle = angle + M_PI;
@@ -721,7 +724,7 @@ int main(int argc, char* argv[])
                             deslX = 0.01;
                             deslZ = 0;
 
-                            if(wallList[i].bbox_min.x>0)
+                            if(portalList[i].bbox_min.x>0)
                                 deslX = deslX * -1;
                             else
                                 angle = angle + M_PI;
@@ -738,14 +741,14 @@ int main(int argc, char* argv[])
                 if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
                 {
 
-                    if(CheckLineBox(wallList[i].bbox_min, wallList[i].bbox_max,
+                    if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
                                     camera_position_c, camera_view_vector, point))
                     {
                         lastPortal2Time = time;
 
                         float deslX;
                         float deslZ;
-                        float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+                        float angle = boxAngle(portalList[i].bbox_min, portalList[i].bbox_max);
 
                         if(angle<0.1) angle = 0;
 
@@ -754,7 +757,7 @@ int main(int argc, char* argv[])
                             deslX = 0;
                             deslZ = 0.01;
 
-                            if(wallList[i].bbox_min.z>0)
+                            if(portalList[i].bbox_min.z>0)
                                 deslZ = deslZ * -1;
                             else
                                 angle = angle + M_PI;
@@ -764,7 +767,7 @@ int main(int argc, char* argv[])
                             deslX = 0.01;
                             deslZ = 0;
 
-                            if(wallList[i].bbox_min.x>0)
+                            if(portalList[i].bbox_min.x>0)
                                 deslX = deslX * -1;
                             else
                                 angle = angle + M_PI;
@@ -776,20 +779,6 @@ int main(int argc, char* argv[])
                         Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                         Portal2Bbox.angle = angle;
                     }
-                }
-
-                bbox wallHitbox;
-                wallHitbox.bbox_min = wallList[i].bbox_min;
-                wallHitbox.bbox_max = wallList[i].bbox_max;
-
-                wallHitbox.bbox_max.x+=1;
-                wallHitbox.bbox_min.x-=1;
-                wallHitbox.bbox_max.z+=1;
-                wallHitbox.bbox_min.z-=1;
-
-                if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
-                {
-                    blockMove = true;
                 }
             }
         }
