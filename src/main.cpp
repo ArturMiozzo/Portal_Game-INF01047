@@ -154,9 +154,12 @@ void PrintObjModelInfo(ObjModel*); // Função para debugging
 void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indices, std::vector<float>* model_coefficients, std::vector<float>* normal_coefficients, GLenum rendering_mode);
 void BuildAim();
 void BuildPortal();
+void BuildCube();
 bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_max);
 int CheckLineBox( glm::vec4 B1, glm::vec4 B2, glm::vec4 L1, glm::vec4 vector_view, glm::vec4 &Hit);
 double boxAngle(glm::vec4 B1, glm::vec4 B2);
+glm::vec3 bezierCurve(std::vector<glm::vec3> points, float time);
+float Bernstein(float k, float n, float t);
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
@@ -386,6 +389,7 @@ int main(int argc, char* argv[])
 
     BuildAim();
     BuildPortal();
+    BuildCube();
 
     //LoadPhongShadersFromFiles();
 
@@ -415,41 +419,69 @@ int main(int argc, char* argv[])
     bbox wall1;
     wall1.bbox_min = glm::vec4(-width, 0, -width, 0);
     wall1.bbox_max = glm::vec4(width, height, -width, 0);
+    wall1.angle = boxAngle(wall1.bbox_min, wall1.bbox_max);
 
     bbox wall2;
     wall2.bbox_min = glm::vec4(-width, 0, spaceDistance, 0);
     wall2.bbox_max = glm::vec4(-width, height, width, 0);
+    wall2.angle = boxAngle(wall2.bbox_min, wall2.bbox_max);
 
     bbox wall3;
     wall3.bbox_min = glm::vec4(-width, 0, width, 0);
     wall3.bbox_max = glm::vec4(width, height, width, 0);
+    wall3.angle = boxAngle(wall3.bbox_min, wall3.bbox_max);
 
     bbox wall4;
     wall4.bbox_min = glm::vec4(width, 0, spaceDistance, 0);
     wall4.bbox_max = glm::vec4(width, height, width, 0);
+    wall4.angle = boxAngle(wall4.bbox_min, wall4.bbox_max);
 
     bbox wall5;
     wall5.bbox_min = glm::vec4(-width, 0, -width, 0);
     wall5.bbox_max = glm::vec4(-width, height, -spaceDistance, 0);
+    wall5.angle = boxAngle(wall5.bbox_min, wall5.bbox_max);
 
     bbox wall6;
     wall6.bbox_min = glm::vec4(width, 0, -width, 0);
     wall6.bbox_max = glm::vec4(width, height, -spaceDistance, 0);
+    wall6.angle = boxAngle(wall6.bbox_min, wall6.bbox_max);
 
     bbox holeIn;
     holeIn.bbox_min = glm::vec4(-width-1, 0, -spaceDistance-1, 0);
     holeIn.bbox_max = glm::vec4(width+1, height, -spaceDistance+1, 0);
+    holeIn.angle = boxAngle(holeIn.bbox_min, holeIn.bbox_max);
 
     bbox holeOut;
     holeOut.bbox_min = glm::vec4(-width-1, 0, spaceDistance-1, 0);
     holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance+1, 0);
+    holeOut.angle = boxAngle(holeOut.bbox_min, holeOut.bbox_max);
 
+    bbox cubeIn;
+    cubeIn.bbox_min = glm::vec4(-2.5, 0, -24, 0);
+    cubeIn.bbox_max = glm::vec4(2.5, height, -24, 0);
+    cubeIn.angle = 0.0;
+
+    wallList.push_back(cubeIn);
     wallList.push_back(wall1);
     wallList.push_back(wall2);
     wallList.push_back(wall3);
     wallList.push_back(wall4);
     wallList.push_back(wall5);
     wallList.push_back(wall6);
+
+    std::vector<glm::vec3> bezierCurvePoints;
+
+    bezierCurvePoints.push_back(glm::vec3(-1.0f, 0.0f, 0.0f));
+    bezierCurvePoints.push_back(glm::vec3(-0.8f, 0.5f, 0.0f));
+    bezierCurvePoints.push_back(glm::vec3(-0.6f, 0.0f, 0.0f));
+    bezierCurvePoints.push_back(glm::vec3(-0.4f, 0.5f, 0.0f));
+    bezierCurvePoints.push_back(glm::vec3(-0.2f, 0.0f, 0.0f));
+    bezierCurvePoints.push_back(glm::vec3(0.0f, 0.5f, 0.0f));
+
+    for(float i=0.0; i<=1.0; i+=0.1)
+    {
+        PrintVector3(bezierCurve(bezierCurvePoints, i));
+    }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
@@ -530,7 +562,9 @@ int main(int argc, char* argv[])
 
                         float deslX;
                         float deslZ;
-                        float angle = boxAngle(wallList[i].bbox_min, wallList[i].bbox_max);
+                        float angle = wallList[i].angle;
+
+                        printf("angle %f\n", angle);
 
                         if(angle<0.1) angle = 0;
 
@@ -729,6 +763,13 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
+
+        bezierCurve(bezierCurvePoints, ((int)time));
+
+        model = Matrix_Translate(0.0f,height/2,-25.0f) * Matrix_Scale(5, height, 1);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ROOF);
+        DrawVirtualObject("cube");
 
         if(Portal1Created)
         {
@@ -1021,6 +1062,31 @@ bool detectColision(glm::vec4 position, glm::vec4 hitbox_min, glm::vec4 hitbox_m
 double boxAngle(glm::vec4 B1, glm::vec4 B2)
 {
     return atan2(B2.y - B1.y, B2.x - B1.x);
+}
+
+int factorial(int n)
+{
+    int f = 1;
+    for (int i=1; i<=n; ++i)
+        f *= i;
+    return f;
+}
+
+float Bernstein(float k, float n, float t)
+{
+    return (factorial(n) / (factorial(k) * factorial(n-k)))*pow(t, k)*pow(1-t, n-k);
+}
+
+glm::vec3 bezierCurve(std::vector<glm::vec3> points, float time)
+{
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    for(int i=0; i<points.size(); i++)
+    {
+        position+=Bernstein(i, points.size(), time) * points.at(i);
+    }
+
+    return position;
 }
 
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
@@ -1492,6 +1558,65 @@ void BuildAim()
     BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
 
     BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
+}
+
+void BuildCube()
+{
+    GLfloat model_coefficients[] = {
+    // Vértices de um cubo
+    //    X      Y     Z     W
+        -1.0f,  1.0f,  1.0f, 1.0f, // posição do vértice 0
+        -1.0f, -1.0f,  1.0f, 1.0f, // posição do vértice 1
+         1.0f, -1.0f,  1.0f, 1.0f, // posição do vértice 2
+         1.0f,  1.0f,  1.0f, 1.0f, // posição do vértice 3
+        -1.0f,  1.0f, -1.0f, 1.0f, // posição do vértice 4
+        -1.0f, -1.0f, -1.0f, 1.0f, // posição do vértice 5
+         1.0f, -1.0f, -1.0f, 1.0f, // posição do vértice 6
+         1.0f,  1.0f, -1.0f, 1.0f, // posição do vértice 7
+    };
+
+    GLfloat color_coefficients[] = {
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
+    };
+
+    GLuint indices[] = {
+    // Definimos os índices dos vértices que definem as FACES de um cubo
+    // através de 12 triângulos que serão desenhados com o modo de renderização
+    // GL_TRIANGLES.
+        0, 1, 2, // triângulo 1
+        7, 6, 5, // triângulo 2
+        3, 2, 6, // triângulo 3
+        4, 0, 3, // triângulo 4
+        4, 5, 1, // triângulo 5
+        1, 5, 6, // triângulo 6
+        0, 2, 3, // triângulo 7
+        7, 5, 4, // triângulo 8
+        3, 6, 7, // triângulo 9
+        4, 3, 7, // triângulo 10
+        4, 1, 0, // triângulo 11
+        1, 6, 2, // triângulo 12
+    };
+
+    int n = sizeof(model_coefficients) / sizeof(model_coefficients[0]);
+
+	std::vector<GLfloat> modelvec(model_coefficients, model_coefficients + n);
+
+    n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
+
+	std::vector<GLfloat> colorvec(color_coefficients, color_coefficients + n);
+
+    n = sizeof(indices) / sizeof(indices[0]);
+
+	std::vector<GLuint> indicesvec(indices, indices + n);
+
+    BuildTrianglesAndAddToVirtualScene2("cube", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
 }
 
 void BuildPortal()
