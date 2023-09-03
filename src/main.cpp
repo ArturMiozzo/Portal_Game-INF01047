@@ -220,11 +220,9 @@ float spaceDistance = 10.0f;
 bool Portal1Created = false;
 bool Portal1OnCube = false;
 bbox Portal1Bbox;
-bbox Portal1Origin;
 bool Portal2Created = false;
 bool Portal2OnCube = false;
 bbox Portal2Bbox;
-bbox Portal2Origin;
 double lastPortal1Time = 0;
 double lastPortal2Time = 0;
 
@@ -611,9 +609,6 @@ int main(int argc, char* argv[])
 
                     Portal1Created = true;
                     Portal1OnCube = true;
-                    Portal1Origin.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal1Origin.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal1Origin.angle = angle;
                     Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                     Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                     Portal1Bbox.angle = angle;
@@ -657,9 +652,6 @@ int main(int argc, char* argv[])
 
                     Portal2Created = true;
                     Portal2OnCube = true;
-                    Portal2Origin.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                    Portal2Origin.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                    Portal2Origin.angle = angle;
                     Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                     Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                     Portal2Bbox.angle = angle;
@@ -922,12 +914,22 @@ int main(int argc, char* argv[])
 
         if(Portal1OnCube)
         {
-            Portal1Bbox.bbox_min.x=Portal1Origin.bbox_min.x+(cubePosition.x-cubePositionOrigin.x);
-            Portal1Bbox.bbox_min.y=Portal1Origin.bbox_min.y+(cubePosition.y-cubePositionOrigin.y);
-            Portal1Bbox.bbox_min.z=Portal1Origin.bbox_min.z+(cubePosition.z-cubePositionOrigin.z);
-            Portal1Bbox.bbox_max.x=Portal1Origin.bbox_max.x+(cubePosition.x-cubePositionOrigin.x);
-            Portal1Bbox.bbox_max.y=Portal1Origin.bbox_max.y+(cubePosition.y-cubePositionOrigin.y);
-            Portal1Bbox.bbox_max.z=Portal1Origin.bbox_max.z+(cubePosition.z-cubePositionOrigin.z);
+            Portal1Bbox.bbox_min.x=cubePosition.x;
+            Portal1Bbox.bbox_min.y=cubePosition.y;
+            Portal1Bbox.bbox_min.z=cubePosition.z+1.01;
+            Portal1Bbox.bbox_max.x=cubePosition.x;
+            Portal1Bbox.bbox_max.y=cubePosition.y;
+            Portal1Bbox.bbox_max.z=cubePosition.z+1.01;
+        }
+
+        if(Portal2OnCube)
+        {
+            Portal2Bbox.bbox_min.x=cubePosition.x;
+            Portal2Bbox.bbox_min.y=cubePosition.y;
+            Portal2Bbox.bbox_min.z=cubePosition.z+1.01;
+            Portal2Bbox.bbox_max.x=cubePosition.x;
+            Portal2Bbox.bbox_max.y=cubePosition.y;
+            Portal2Bbox.bbox_max.z=cubePosition.z+1.01;
         }
 
         model = Matrix_Translate(cubePosition.x,cubePosition.y,cubePosition.z) * Matrix_Scale(cubeWidth, height, 1);
