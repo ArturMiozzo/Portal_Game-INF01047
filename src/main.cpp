@@ -489,6 +489,10 @@ int main(int argc, char* argv[])
     bezierCurvePoints.push_back(glm::vec3(-0.2f, 0.0f, 0.0f));
     bezierCurvePoints.push_back(glm::vec3(0.0f, 0.5f, 0.0f));
 
+    float t_bezier;
+    float t_bezier_last;
+    bool isBackwards = false;
+
     for(float i=0.0; i<=1.0; i+=0.1)
     {
         PrintVector3(bezierCurve(bezierCurvePoints, i));
@@ -897,9 +901,21 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, COMPANION_CUBE);
         DrawVirtualObject("pCube2");
 
-        printf("%f\n", ((int)(time*1000)%5000)/5000.0);
+        //printf("%f\n", ((int)(time*1000)%5000)/5000.0);
 
-        glm::vec3 point = bezierCurve(bezierCurvePoints, ((int)(time*1000)%5000)/5000.0);
+        t_bezier_last = t_bezier;
+        t_bezier = ((int)(time*1000)%5000)/5000.0;
+        glm::vec3 point;
+        if(t_bezier_last > t_bezier)
+        {
+            isBackwards = !isBackwards;
+        }
+        if(isBackwards)
+        {
+            point = bezierCurve(bezierCurvePoints, 1.0 - t_bezier);
+        }
+        else point = bezierCurve(bezierCurvePoints, t_bezier);
+
         cubePosition.x=cubePositionOrigin.x+(point.x*width);
         cubePosition.y=cubePositionOrigin.y+(point.y*height);
         cubePosition.z=cubePositionOrigin.z+(point.z*width);
@@ -2119,7 +2135,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     if (g_CameraPhi < phimin)
         g_CameraPhi = phimin;
 
-    std::cout << "x: " << xpos << " y: " << ypos << std::endl;
 
 
 
