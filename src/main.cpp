@@ -68,6 +68,7 @@
 #define PORTAL2  5
 #define AIMLEFT  6
 #define AIMRIGHT  7
+#define COMPANION_CUBE 8
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -241,7 +242,7 @@ bool b_right = false;
 bool b_back = false;
 bool b_left = false;
 bool noclip = false;
-float speed = 0.3;
+float speed = 25;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -367,6 +368,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/portalgun_col.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_blue.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
+    LoadTextureImage("../../data/metal_box.png");
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -386,6 +388,10 @@ int main(int argc, char* argv[])
     ObjModel gunmodel("../../data/Portal Gun.obj");
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    ObjModel boxmodel("../../data/Portal_Companion_Cube.obj");
+    ComputeNormals(&boxmodel);
+    BuildTrianglesAndAddToVirtualScene(&boxmodel);
 
     BuildAim();
     BuildPortal();
@@ -413,6 +419,10 @@ int main(int argc, char* argv[])
     float r = g_CameraDistance;
     camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
+
+    float t_now;
+    float t_prev = glfwGetTime();
+    float t_step;
 
     std::vector<bbox> wallList;
 
@@ -523,6 +533,10 @@ int main(int argc, char* argv[])
 
         glm::mat4 view;
         glm::vec4 lastCameraPos;
+        t_now = glfwGetTime();
+        t_step = t_now - t_prev;
+
+        t_prev = t_now;
 
         if(isLookAt)
         {
@@ -536,7 +550,7 @@ int main(int argc, char* argv[])
         {
             lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
 
-            view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip);
+            view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip, t_step);
             //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
             blockMove = false;
 
@@ -763,6 +777,11 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
+
+        model = Matrix_Translate(-5.0f, -height/2 + 1, +15.5f)* Matrix_Identity();
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, COMPANION_CUBE);
+        DrawVirtualObject("pCube2");
 
         bezierCurve(bezierCurvePoints, ((int)time));
 
@@ -1176,6 +1195,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureCompanionCube"), 6);
     glUseProgram(0);
 }
 void LoadGouraudShadersFromFiles()
@@ -1914,11 +1934,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
     float dx, dy;
-    if(xpos >= 699 || xpos <= 100)
+    if(xpos >= 1099 || xpos <= 400)
     {
-        if(ypos >= 499 || ypos <= 100)
+        if(ypos >= 899 || ypos <= 300)
         {
-            glfwSetCursorPos(window, 400, 300);
+            glfwSetCursorPos(window, 800, 600);
             dx = 0;
             dy = 0;
             g_LastCursorPosX = 400;
@@ -1927,20 +1947,20 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         }
         else
         {
-            glfwSetCursorPos(window, 400, ypos);
+            glfwSetCursorPos(window, 800, ypos);
             dx = 0;
-            g_LastCursorPosX = 400;
+            g_LastCursorPosX = 800;
             g_LastCursorPosY = ypos;
         }
 
     }
-    else if(ypos >= 499 || ypos <= 100)
+    else if(ypos >= 899 || ypos <= 300)
     {
 
-            glfwSetCursorPos(window, xpos, 300);
+            glfwSetCursorPos(window, xpos, 600);
             dy = 0;
             g_LastCursorPosX = xpos;
-            g_LastCursorPosY = 300;
+            g_LastCursorPosY = 600;
 
     }
     else
@@ -1957,8 +1977,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
 
     // Atualizamos parâmetros da câmera com os deslocamentos
-    g_CameraTheta -= 0.01f*dx;
-    g_CameraPhi   += 0.01f*dy;
+    g_CameraTheta -= 0.006f*dx;
+    g_CameraPhi   += 0.006f*dy;
 
     // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
     float phimax = 3.141592f/2;
@@ -1970,6 +1990,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     if (g_CameraPhi < phimin)
         g_CameraPhi = phimin;
 
+    std::cout << "x: " << xpos << " y: " << ypos << std::endl;
 
 
 

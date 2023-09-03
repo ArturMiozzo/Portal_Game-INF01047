@@ -22,6 +22,7 @@ uniform sampler2D TextureRoof;
 uniform sampler2D TexturePortalGun;
 uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
+uniform sampler2D TextureCompanionCube;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
