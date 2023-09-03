@@ -28,6 +28,7 @@ uniform mat4 projection;
 #define PORTAL2  5
 #define AIMLEFT  6
 #define AIMRIGHT  7
+#define COMPANION_CUBE 8
 
 uniform int object_id;
 
@@ -43,6 +44,7 @@ uniform sampler2D TextureRoof;
 uniform sampler2D TexturePortalGun;
 uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
+uniform sampler2D TextureCompanionCube;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -181,6 +183,27 @@ void main()
         Ka = vec3(0.1,0.1,0.1);
         q = 32.0;
     }
+    else if(object_id == COMPANION_CUBE)
+    {
+        float minx = bbox_min.x;
+        float maxx = bbox_max.x;
+
+        float miny = bbox_min.y;
+        float maxy = bbox_max.y;
+
+        float minz = bbox_min.z;
+        float maxz = bbox_max.z;
+
+        U = (position_model.x-minx)/(maxx-minx);
+        V = (position_model.y-miny)/(maxy-miny);
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TextureCompanionCube, vec2(U,V)).rgb;
+        Kd = vec3(0.2,0.2,0.2);
+        Ks = vec3(0.3,0.3,0.3);
+        Ka = vec3(0.2,0.2,0.2);
+        q = 20.0;
+        //color = vec3(1.0, 0.0, 0.0);
+    }
     else if ( object_id == AIMLEFT )
     {
         Kd0 = vec3(0.0f, 0.0f, 1.0f);
@@ -208,6 +231,8 @@ void main()
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
+
+
     if(object_id == AIMRIGHT || object_id == AIMLEFT)
     {
         color = Kd0;// * (lambert + 0.01);
@@ -223,6 +248,8 @@ void main()
         //color = Kd0; //* lambert_diffuse_term*10;
     }
     else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
+
+
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

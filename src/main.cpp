@@ -68,6 +68,7 @@
 #define PORTAL2  5
 #define AIMLEFT  6
 #define AIMRIGHT  7
+#define COMPANION_CUBE 8
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -364,6 +365,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/portalgun_col.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_blue.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
+    LoadTextureImage("../../data/metal_box.png");
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -383,6 +385,14 @@ int main(int argc, char* argv[])
     ObjModel gunmodel("../../data/Portal Gun.obj");
     ComputeNormals(&gunmodel);
     BuildTrianglesAndAddToVirtualScene(&gunmodel);
+
+    ObjModel boxmodel("../../data/Portal_Companion_Cube.obj");
+    ComputeNormals(&boxmodel);
+    BuildTrianglesAndAddToVirtualScene(&boxmodel);
+    for(float tex : boxmodel.attrib.texcoords)
+    {
+        std::cout << tex << std::endl;
+    }
 
     BuildAim();
     BuildPortal();
@@ -729,6 +739,12 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
+
+        model = Matrix_Translate(-5.0f, -height/2 + 1, +15.5f)* Matrix_Identity();
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, COMPANION_CUBE);
+        DrawVirtualObject("pCube2");
+
 
         if(Portal1Created)
         {
@@ -1110,6 +1126,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureCompanionCube"), 6);
     glUseProgram(0);
 }
 void LoadGouraudShadersFromFiles()
@@ -1832,8 +1849,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
 
     // Atualizamos parâmetros da câmera com os deslocamentos
-    g_CameraTheta -= 0.01f*dx;
-    g_CameraPhi   += 0.01f*dy;
+    g_CameraTheta -= 0.006f*dx;
+    g_CameraPhi   += 0.006f*dy;
 
     // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
     float phimax = 3.141592f/2;
