@@ -389,10 +389,6 @@ int main(int argc, char* argv[])
     ObjModel boxmodel("../../data/Portal_Companion_Cube.obj");
     ComputeNormals(&boxmodel);
     BuildTrianglesAndAddToVirtualScene(&boxmodel);
-    for(float tex : boxmodel.attrib.texcoords)
-    {
-        std::cout << tex << std::endl;
-    }
 
     BuildAim();
     BuildPortal();
