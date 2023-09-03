@@ -218,11 +218,19 @@ float height = 5.0f;
 float spaceDistance = 10.0f;
 
 bool Portal1Created = false;
+bool Portal1OnCube = false;
 bbox Portal1Bbox;
+bbox Portal1Origin;
 bool Portal2Created = false;
+bool Portal2OnCube = false;
 bbox Portal2Bbox;
+bbox Portal2Origin;
 double lastPortal1Time = 0;
 double lastPortal2Time = 0;
+
+glm::vec3 cubePositionOrigin = glm::vec3(0.0f, height/2, -25.0f);
+glm::vec3 cubePosition = cubePositionOrigin;
+float cubeWidth = 5.0f;
 
 bool blockMove = false;
 
@@ -283,7 +291,6 @@ GLint g_light_position_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
-
 
 glm::vec4 camera_position_c;
 glm::vec4 last_camera_position_c;
@@ -466,12 +473,6 @@ int main(int argc, char* argv[])
     holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance+1, 0);
     holeOut.angle = boxAngle(holeOut.bbox_min, holeOut.bbox_max);
 
-    bbox cubeIn;
-    cubeIn.bbox_min = glm::vec4(-2.5, 0, -24, 0);
-    cubeIn.bbox_max = glm::vec4(2.5, height, -24, 0);
-    cubeIn.angle = 0.0;
-
-    wallList.push_back(cubeIn);
     wallList.push_back(wall1);
     wallList.push_back(wall2);
     wallList.push_back(wall3);
@@ -564,6 +565,117 @@ int main(int argc, char* argv[])
                 blockMove = true;
             }
 
+            bbox cubeIn;
+            cubeIn.bbox_min = glm::vec4(cubePosition.x - cubeWidth/2, cubePosition.y-height/2, cubePosition.z+1, 0);
+            cubeIn.bbox_max = glm::vec4(cubePosition.x + cubeWidth/2, cubePosition.y+height/2, cubePosition.z-1, 0);
+            cubeIn.angle = 0.0;
+            glm::vec4 point;
+
+            if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
+            {
+                if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                                camera_position_c, camera_view_vector, point))
+                {
+                    lastPortal1Time = time;
+
+                    float deslX;
+                    float deslZ;
+                    float angle = cubeIn.angle;
+
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(cubeIn.bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(cubeIn.bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+                    Portal1Created = true;
+                    Portal1OnCube = true;
+                    Portal1Origin.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal1Origin.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal1Origin.angle = angle;
+                    Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal1Bbox.angle = angle;
+                }
+            }
+
+            if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
+            {
+
+                if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                                camera_position_c, camera_view_vector, point))
+                {
+                    lastPortal2Time = time;
+
+                    float deslX;
+                    float deslZ;
+                    float angle = boxAngle(cubeIn.bbox_min, cubeIn.bbox_max);
+
+                    if(angle<0.1) angle = 0;
+
+                    if(cos(angle)>0.01)
+                    {
+                        deslX = 0;
+                        deslZ = 0.01;
+
+                        if(cubeIn.bbox_min.z>0)
+                            deslZ = deslZ * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+                    else
+                    {
+                        deslX = 0.01;
+                        deslZ = 0;
+
+                        if(cubeIn.bbox_min.x>0)
+                            deslX = deslX * -1;
+                        else
+                            angle = angle + M_PI;
+                    }
+
+                    Portal2Created = true;
+                    Portal2OnCube = true;
+                    Portal2Origin.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal2Origin.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal2Origin.angle = angle;
+                    Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                    Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                    Portal2Bbox.angle = angle;
+                }
+            }
+
+            bbox wallHitbox;
+            wallHitbox.bbox_min = cubeIn.bbox_min;
+            wallHitbox.bbox_max = cubeIn.bbox_max;
+
+            wallHitbox.bbox_max.x+=1;
+            wallHitbox.bbox_min.x-=1;
+            wallHitbox.bbox_max.z+=1;
+            wallHitbox.bbox_min.z-=1;
+
+            if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
+            {
+                blockMove = true;
+            }
+
             for (int i=0; i<wallList.size(); i++)
             {
                 glm::vec4 point;
@@ -604,6 +716,7 @@ int main(int argc, char* argv[])
                         }
 
                         Portal1Created = true;
+                        Portal1OnCube = false;
                         Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                         Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                         Portal1Bbox.angle = angle;
@@ -646,6 +759,7 @@ int main(int argc, char* argv[])
                         }
 
                         Portal2Created = true;
+                        Portal2OnCube = false;
                         Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                         Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                         Portal2Bbox.angle = angle;
@@ -783,11 +897,24 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, COMPANION_CUBE);
         DrawVirtualObject("pCube2");
 
+        printf("%f\n", ((int)(time*1000)%5000)/5000.0);
 
         glm::vec3 point = bezierCurve(bezierCurvePoints, ((int)(time*1000)%5000)/5000.0);
-        //PrintVector3(point);
+        cubePosition.x=cubePositionOrigin.x+(point.x*width);
+        cubePosition.y=cubePositionOrigin.y+(point.y*height);
+        cubePosition.z=cubePositionOrigin.z+(point.z*width);
 
-        model = Matrix_Translate(0.0f+point.x,height/2+point.y,-25.0f+point.z) * Matrix_Scale(5, height, 1);
+        if(Portal1OnCube)
+        {
+            Portal1Bbox.bbox_min.x=Portal1Origin.bbox_min.x+(cubePosition.x-cubePositionOrigin.x);
+            Portal1Bbox.bbox_min.y=Portal1Origin.bbox_min.y+(cubePosition.y-cubePositionOrigin.y);
+            Portal1Bbox.bbox_min.z=Portal1Origin.bbox_min.z+(cubePosition.z-cubePositionOrigin.z);
+            Portal1Bbox.bbox_max.x=Portal1Origin.bbox_max.x+(cubePosition.x-cubePositionOrigin.x);
+            Portal1Bbox.bbox_max.y=Portal1Origin.bbox_max.y+(cubePosition.y-cubePositionOrigin.y);
+            Portal1Bbox.bbox_max.z=Portal1Origin.bbox_max.z+(cubePosition.z-cubePositionOrigin.z);
+        }
+
+        model = Matrix_Translate(cubePosition.x,cubePosition.y,cubePosition.z) * Matrix_Scale(cubeWidth, height, 1);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("cube");
