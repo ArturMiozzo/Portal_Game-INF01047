@@ -239,7 +239,7 @@ bool b_right = false;
 bool b_back = false;
 bool b_left = false;
 bool noclip = false;
-float speed = 0.3;
+float speed = 25;
 // "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
 // pressionado no momento atual. Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -416,6 +416,10 @@ int main(int argc, char* argv[])
     camera_position_c  = glm::vec4(0,0,r,1.0f); // Ponto "c", centro da câmera
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
 
+    float t_now;
+    float t_prev = glfwGetTime();
+    float t_step;
+
     std::vector<bbox> wallList;
 
     bbox wall1;
@@ -497,6 +501,10 @@ int main(int argc, char* argv[])
 
         glm::mat4 view;
         glm::vec4 lastCameraPos;
+        t_now = glfwGetTime();
+        t_step = t_now - t_prev;
+
+        t_prev = t_now;
 
         if(isLookAt)
         {
@@ -510,7 +518,7 @@ int main(int argc, char* argv[])
         {
             lastCameraPos = glm::vec4(camera_position_c.x,camera_position_c.y,camera_position_c.z,camera_position_c.w);
 
-            view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip);
+            view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip, t_step);
             //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
             blockMove = false;
 
@@ -1802,11 +1810,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
     float dx, dy;
-    if(xpos >= 699 || xpos <= 100)
+    if(xpos >= 1099 || xpos <= 400)
     {
-        if(ypos >= 499 || ypos <= 100)
+        if(ypos >= 899 || ypos <= 300)
         {
-            glfwSetCursorPos(window, 400, 300);
+            glfwSetCursorPos(window, 800, 600);
             dx = 0;
             dy = 0;
             g_LastCursorPosX = 400;
@@ -1815,20 +1823,20 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         }
         else
         {
-            glfwSetCursorPos(window, 400, ypos);
+            glfwSetCursorPos(window, 800, ypos);
             dx = 0;
-            g_LastCursorPosX = 400;
+            g_LastCursorPosX = 800;
             g_LastCursorPosY = ypos;
         }
 
     }
-    else if(ypos >= 499 || ypos <= 100)
+    else if(ypos >= 899 || ypos <= 300)
     {
 
-            glfwSetCursorPos(window, xpos, 300);
+            glfwSetCursorPos(window, xpos, 600);
             dy = 0;
             g_LastCursorPosX = xpos;
-            g_LastCursorPosY = 300;
+            g_LastCursorPosY = 600;
 
     }
     else
@@ -1858,6 +1866,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     if (g_CameraPhi < phimin)
         g_CameraPhi = phimin;
 
+    std::cout << "x: " << xpos << " y: " << ypos << std::endl;
 
 
 
