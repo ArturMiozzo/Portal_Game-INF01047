@@ -558,7 +558,7 @@ int main(int argc, char* argv[])
         //glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_view_vector = glm::vec4(-x,-y,-z,0.0f);
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+        glm::vec4 camera_lookat_l    = glm::vec4(cubePosition.x, cubePosition.y, cubePosition.z, 1.0);
 
         glm::mat4 view;
         glm::vec4 lastCameraPos;
@@ -581,41 +581,133 @@ int main(int argc, char* argv[])
 
             view = Matrix_Camera_View(&camera_position_c, camera_view_vector, camera_up_vector, b_forward, b_back, b_right, b_left, speed, noclip, t_step);
             //std::cout << camera_position_c.x << " " << camera_position_c.y << " " << camera_position_c.z << std::endl;
-            blockMove = false;
 
-            for (int i=0; i<collisionList.size(); i++)
+        }
+        blockMove = false;
+
+        for (int i=0; i<collisionList.size(); i++)
+        {
+            bbox wallHitbox;
+            wallHitbox.bbox_min = collisionList[i].bbox_min;
+            wallHitbox.bbox_max = collisionList[i].bbox_max;
+
+            wallHitbox.bbox_max.x+=1;
+            wallHitbox.bbox_min.x-=1;
+            wallHitbox.bbox_max.z+=1;
+            wallHitbox.bbox_min.z-=1;
+
+            if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
             {
-                bbox wallHitbox;
-                wallHitbox.bbox_min = collisionList[i].bbox_min;
-                wallHitbox.bbox_max = collisionList[i].bbox_max;
-
-                wallHitbox.bbox_max.x+=1;
-                wallHitbox.bbox_min.x-=1;
-                wallHitbox.bbox_max.z+=1;
-                wallHitbox.bbox_min.z-=1;
-
-                if(detectColision(camera_position_c, wallHitbox.bbox_min, wallHitbox.bbox_max))
-                {
-                    blockMove = true;
-                }
+                blockMove = true;
             }
+        }
 
-            bbox cubeIn;
-            cubeIn.bbox_min = glm::vec4(cubePosition.x - cubeWidth/2, cubePosition.y-height/2, cubePosition.z+1, 0);
-            cubeIn.bbox_max = glm::vec4(cubePosition.x + cubeWidth/2, cubePosition.y+height/2, cubePosition.z-1, 0);
-            cubeIn.angle = 0.0;
+        bbox cubeIn;
+        cubeIn.bbox_min = glm::vec4(cubePosition.x - cubeWidth/2, cubePosition.y-height/2, cubePosition.z+1, 0);
+        cubeIn.bbox_max = glm::vec4(cubePosition.x + cubeWidth/2, cubePosition.y+height/2, cubePosition.z-1, 0);
+        cubeIn.angle = 0.0;
+        glm::vec4 point;
+
+        if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
+        {
+            if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                            camera_position_c, camera_view_vector, point))
+            {
+                lastPortal1Time = time;
+
+                float deslX;
+                float deslZ;
+                float angle = cubeIn.angle;
+
+                if(angle<0.1) angle = 0;
+
+                if(cos(angle)>0.01)
+                {
+                    deslX = 0;
+                    deslZ = 0.01;
+
+                    if(cubeIn.bbox_min.z>0)
+                        deslZ = deslZ * -1;
+                    else
+                        angle = angle + M_PI;
+                }
+                else
+                {
+                    deslX = 0.01;
+                    deslZ = 0;
+
+                    if(cubeIn.bbox_min.x>0)
+                        deslX = deslX * -1;
+                    else
+                        angle = angle + M_PI;
+                }
+
+                Portal1Created = true;
+                Portal1OnCube = true;
+                Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                Portal1Bbox.angle = angle;
+            }
+        }
+
+        if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
+        {
+
+            if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                            camera_position_c, camera_view_vector, point))
+            {
+                lastPortal2Time = time;
+
+                float deslX;
+                float deslZ;
+                float angle = cubeIn.angle;
+
+                if(angle<0.1) angle = 0;
+
+                if(cos(angle)>0.01)
+                {
+                    deslX = 0;
+                    deslZ = 0.01;
+
+                    if(cubeIn.bbox_min.z>0)
+                        deslZ = deslZ * -1;
+                    else
+                        angle = angle + M_PI;
+                }
+                else
+                {
+                    deslX = 0.01;
+                    deslZ = 0;
+
+                    if(cubeIn.bbox_min.x>0)
+                        deslX = deslX * -1;
+                    else
+                        angle = angle + M_PI;
+                }
+
+                Portal2Created = true;
+                Portal2OnCube = true;
+                Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
+                Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
+                Portal2Bbox.angle = angle;
+            }
+        }
+
+        for (int i=0; i<portalList.size(); i++)
+        {
             glm::vec4 point;
-
             if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
             {
-                if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
                                 camera_position_c, camera_view_vector, point))
                 {
                     lastPortal1Time = time;
 
                     float deslX;
                     float deslZ;
-                    float angle = cubeIn.angle;
+                    float angle = portalList[i].angle;
+
+                    printf("angle %f\n", angle);
 
                     if(angle<0.1) angle = 0;
 
@@ -624,7 +716,7 @@ int main(int argc, char* argv[])
                         deslX = 0;
                         deslZ = 0.01;
 
-                        if(cubeIn.bbox_min.z>0)
+                        if(portalList[i].bbox_min.z>0)
                             deslZ = deslZ * -1;
                         else
                             angle = angle + M_PI;
@@ -634,14 +726,14 @@ int main(int argc, char* argv[])
                         deslX = 0.01;
                         deslZ = 0;
 
-                        if(cubeIn.bbox_min.x>0)
+                        if(portalList[i].bbox_min.x>0)
                             deslX = deslX * -1;
                         else
                             angle = angle + M_PI;
                     }
 
                     Portal1Created = true;
-                    Portal1OnCube = true;
+                    Portal1OnCube = false;
                     Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                     Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                     Portal1Bbox.angle = angle;
@@ -651,14 +743,14 @@ int main(int argc, char* argv[])
             if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
             {
 
-                if(CheckLineBox(cubeIn.bbox_min, cubeIn.bbox_max,
+                if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
                                 camera_position_c, camera_view_vector, point))
                 {
                     lastPortal2Time = time;
 
                     float deslX;
                     float deslZ;
-                    float angle = cubeIn.angle;
+                    float angle = boxAngle(portalList[i].bbox_min, portalList[i].bbox_max);
 
                     if(angle<0.1) angle = 0;
 
@@ -667,7 +759,7 @@ int main(int argc, char* argv[])
                         deslX = 0;
                         deslZ = 0.01;
 
-                        if(cubeIn.bbox_min.z>0)
+                        if(portalList[i].bbox_min.z>0)
                             deslZ = deslZ * -1;
                         else
                             angle = angle + M_PI;
@@ -677,108 +769,17 @@ int main(int argc, char* argv[])
                         deslX = 0.01;
                         deslZ = 0;
 
-                        if(cubeIn.bbox_min.x>0)
+                        if(portalList[i].bbox_min.x>0)
                             deslX = deslX * -1;
                         else
                             angle = angle + M_PI;
                     }
 
                     Portal2Created = true;
-                    Portal2OnCube = true;
+                    Portal2OnCube = false;
                     Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
                     Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
                     Portal2Bbox.angle = angle;
-                }
-            }
-
-            for (int i=0; i<portalList.size(); i++)
-            {
-                glm::vec4 point;
-                if(time - lastPortal1Time > 0.5 && g_LeftMouseButtonPressed)
-                {
-                    if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
-                                    camera_position_c, camera_view_vector, point))
-                    {
-                        lastPortal1Time = time;
-
-                        float deslX;
-                        float deslZ;
-                        float angle = portalList[i].angle;
-
-                        printf("angle %f\n", angle);
-
-                        if(angle<0.1) angle = 0;
-
-                        if(cos(angle)>0.01)
-                        {
-                            deslX = 0;
-                            deslZ = 0.01;
-
-                            if(portalList[i].bbox_min.z>0)
-                                deslZ = deslZ * -1;
-                            else
-                                angle = angle + M_PI;
-                        }
-                        else
-                        {
-                            deslX = 0.01;
-                            deslZ = 0;
-
-                            if(portalList[i].bbox_min.x>0)
-                                deslX = deslX * -1;
-                            else
-                                angle = angle + M_PI;
-                        }
-
-                        Portal1Created = true;
-                        Portal1OnCube = false;
-                        Portal1Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                        Portal1Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                        Portal1Bbox.angle = angle;
-                    }
-                }
-
-                if(time - lastPortal2Time > 0.5 && g_RightMouseButtonPressed)
-                {
-
-                    if(CheckLineBox(portalList[i].bbox_min, portalList[i].bbox_max,
-                                    camera_position_c, camera_view_vector, point))
-                    {
-                        lastPortal2Time = time;
-
-                        float deslX;
-                        float deslZ;
-                        float angle = boxAngle(portalList[i].bbox_min, portalList[i].bbox_max);
-
-                        if(angle<0.1) angle = 0;
-
-                        if(cos(angle)>0.01)
-                        {
-                            deslX = 0;
-                            deslZ = 0.01;
-
-                            if(portalList[i].bbox_min.z>0)
-                                deslZ = deslZ * -1;
-                            else
-                                angle = angle + M_PI;
-                        }
-                        else
-                        {
-                            deslX = 0.01;
-                            deslZ = 0;
-
-                            if(portalList[i].bbox_min.x>0)
-                                deslX = deslX * -1;
-                            else
-                                angle = angle + M_PI;
-                        }
-
-                        Portal2Created = true;
-                        Portal2OnCube = false;
-                        Portal2Bbox.bbox_min = glm::vec4(point.x+deslX, height/2, point.z+deslZ, 0.0);
-                        Portal2Bbox.bbox_max = glm::vec4(point.x-deslX, height/2, point.z-deslZ, 0.0);
-                        Portal2Bbox.angle = angle;
-                    }
                 }
             }
         }
@@ -933,21 +934,21 @@ int main(int argc, char* argv[])
 
         t_bezier_last = t_bezier;
         t_bezier = ((int)(time*1000)%5000)/5000.0;
-        glm::vec3 point;
+        glm::vec3 bezier_point;
         if(t_bezier_last > t_bezier)
         {
             isBackwards = !isBackwards;
         }
         if(isBackwards)
         {
-            point = bezierCurve(bezierCurvePoints, 1.0 - t_bezier);
+            bezier_point = bezierCurve(bezierCurvePoints, 1.0 - t_bezier);
         }
-        else point = bezierCurve(bezierCurvePoints, t_bezier);
+        else bezier_point = bezierCurve(bezierCurvePoints, t_bezier);
         //PrintVector(camera_position_c);
         std::cout << isNear(camera_position_c, box_position) << std::endl;
-        cubePosition.x=cubePositionOrigin.x+(point.x*width);
-        cubePosition.y=cubePositionOrigin.y+(point.y*height);
-        cubePosition.z=cubePositionOrigin.z+(point.z*width);
+        cubePosition.x=cubePositionOrigin.x+(bezier_point.x*width);
+        cubePosition.y=cubePositionOrigin.y+(bezier_point.y*height);
+        cubePosition.z=cubePositionOrigin.z+(bezier_point.z*width);
 
         if(Portal1OnCube)
         {
