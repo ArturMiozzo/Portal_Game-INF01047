@@ -837,7 +837,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, AIMLEFT);
         DrawVirtualObject("aimLeft");
 
-        model = Matrix_Translate(0.05,-0.05,-1) * Matrix_Scale(0.05f, 0.1f, 0.05f) * Matrix_Rotate(3.141592f, glm::vec4(0.05f,0.1f,0.0f,0.0f));
+        model = Matrix_Translate(0.05,-0.05,-1) * Matrix_Scale(0.05f, 0.1f, 0.05f) * Matrix_Rotate(3.141592f, glm::vec4(0.0f,0.0f,1.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, AIMRIGHT);
         DrawVirtualObject("aimRight");
