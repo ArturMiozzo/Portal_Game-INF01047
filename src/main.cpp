@@ -914,7 +914,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        model = Matrix_Translate(+40.0f, -height/2, +30.0f)* Matrix_Scale(0.07, 0.07, 0.07) * Matrix_Identity();
+        model = Matrix_Translate(+40.0f, -height/2 + 0.01, +30.0f)* Matrix_Scale(0.07, 0.07, 0.07) * Matrix_Identity();
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, BUTTON);
         DrawVirtualObject("Stm_button01");
