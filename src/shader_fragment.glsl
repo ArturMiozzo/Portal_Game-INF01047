@@ -246,6 +246,10 @@ void main()
         //color = Kd0 * (lambert_diffuse_term + ambient_term);//(phong_specular_term + ambient_term);
         //color = Kd0; //* lambert_diffuse_term*10;
     }
+    else if(object_id == COMPANION_CUBE || object_id == BUTTON)
+    {
+        color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term);
+    }
     else color = Kd0 * (lambert_diffuse_term + ambient_term + phong_specular_term)*10;
 
 

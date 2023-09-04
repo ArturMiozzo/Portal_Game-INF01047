@@ -514,7 +514,7 @@ int main(int argc, char* argv[])
     float t_bezier_last;
     bool isBackwards = false;
 
-    box_position = glm::vec4(+40.0f, -height/2 + 1, -30.0f, 1.0f);
+    box_position = glm::vec4(+40.0f, -height/2 + 1.25, -30.0f, 1.0f);
     glm::vec4 button_position = glm::vec4(+40.0f, -height/2 + 1, +30.0f, 1.0f);
 
     /*for(float i=0.0; i<=1.0; i+=0.1)
@@ -856,8 +856,8 @@ int main(int argc, char* argv[])
             if(isNear(box_position, button_position))
             {
                 box_position = button_position;
-                box_position.y +=1;
-                box_position.z +=1.5;
+                box_position.y +=1.25;
+                box_position.z +=0.8;
             }
         }
 
