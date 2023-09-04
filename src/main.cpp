@@ -382,7 +382,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/portal_blue.jpg");      // TextureImage2
     LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
     LoadTextureImage("../../data/metal_box.png");
-    LoadTextureImage("../../data/box_socketA.png");
+    LoadTextureImage("../../data/Button.bmp");
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -407,7 +407,7 @@ int main(int argc, char* argv[])
     ComputeNormals(&boxmodel);
     BuildTrianglesAndAddToVirtualScene(&boxmodel);
 
-    ObjModel buttonmodel("../../data/box_socket.obj");
+    ObjModel buttonmodel("../../data/portalbutton.obj");
     ComputeNormals(&buttonmodel);
     BuildTrianglesAndAddToVirtualScene(&buttonmodel);
 
@@ -914,10 +914,11 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, ROOF);
         DrawVirtualObject("the_roof");
 
-        model = Matrix_Translate(+40.0f, -height/2 + 1, +30.0f)* Matrix_Scale(0.07, 0.07, 0.07) * Matrix_Identity();
+        model = Matrix_Translate(+40.0f, -height/2, +30.0f)* Matrix_Scale(0.07, 0.07, 0.07) * Matrix_Identity();
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, BUTTON);
-        DrawVirtualObject("g0");
+        DrawVirtualObject("Stm_button01");
+        DrawVirtualObject("Stm_button02");
 
         if(!isHolding)
         {
@@ -1412,6 +1413,8 @@ void LoadGouraudShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalGun"), 3);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalBlue"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureCompanionCube"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureButton"), 7);
     glUseProgram(0);
 }
 // Função que pega a matriz M e guarda a mesma no topo da pilha

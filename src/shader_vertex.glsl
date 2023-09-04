@@ -144,6 +144,10 @@ void main()
     {
         cor_v = texture(TextureButton, texture_coefficients).rgb;
     }
+    else if(object_id == COMPANION_CUBE)
+    {
+        cor_v = texture(TextureCompanionCube, texture_coefficients).rgb;
+    }
     else cor_v = vec3(0.0, 0.0, 0.0);
 }
 

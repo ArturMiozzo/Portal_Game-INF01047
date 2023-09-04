@@ -187,19 +187,8 @@ void main()
     }
     else if(object_id == COMPANION_CUBE)
     {
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
-
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
-
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
-
-        U = (position_model.x-minx)/(maxx-minx);
-        V = (position_model.y-miny)/(maxy-miny);
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-        Kd0 = texture(TextureCompanionCube, vec2(U,V)).rgb;
+        Kd0 = texture(TextureCompanionCube, texcoords).rgb;
         Kd = vec3(0.2,0.2,0.2);
         Ks = vec3(0.3,0.3,0.3);
         Ka = vec3(0.2,0.2,0.2);
@@ -208,7 +197,7 @@ void main()
     }
     else if ( object_id == BUTTON)
     {
-        Kd0 = cor_v;
+        Kd0 = texture(TextureButton, texcoords).rgb;
         Kd = vec3(1.0,1.0,1.0);
         Ks = vec3(1.0,1.0,1.0);
         Ka = vec3(0.1,0.1,0.1);
