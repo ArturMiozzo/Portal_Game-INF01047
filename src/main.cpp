@@ -831,12 +831,12 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PORTALGUN);
         DrawVirtualObject("PortalGun");
         //LoadPhongShadersFromFiles();
-        model = Matrix_Translate(-0.05,0.05,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
+        model = Matrix_Translate(-0.05,0.05,-1) * Matrix_Scale(0.05f, 0.1f, 0.05f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, AIMLEFT);
         DrawVirtualObject("aimLeft");
 
-        model = Matrix_Translate(0.05,-0.05,-1) * Matrix_Scale(0.2f, 0.2f, 0.2f);
+        model = Matrix_Translate(0.05,-0.05,-1) * Matrix_Scale(0.05f, 0.1f, 0.05f) * Matrix_Rotate(3.141592f, glm::vec4(0.05f,0.1f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, AIMRIGHT);
         DrawVirtualObject("aimRight");
@@ -1720,15 +1720,42 @@ void BuildTrianglesAndAddToVirtualScene2(char* name, std::vector<GLuint>* indice
 
 void BuildAim()
 {
-    GLfloat model_coefficients[] = {
-    // Vértices de um cubo
-    //    X      Y     Z     W
-        0.0f,  0.2f,  0.0f, 1.0f, // posição do vértice 0
-        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
-        0.2, -0.2,  0.0f, 1.0f, // posição do vértice 2
-        0.0, -0.2,  0.0f, 1.0f, // posição do vértice 0
-        -0.2f, -0.2f,  0.0f, 1.0f, // posição do vértice 1
-        0.2, 0.2,  0.0f, 1.0f, // posição do vértice 2
+    GLfloat model_coefficients_left[] = {
+     1.0f, 0.72f, 0.0f, 1.0f,
+     0.75f, 0.95f, 0.0f, 1.0f,
+     0.56f, 0.82f, 0.0f, 1.0f,
+     0.31f, 1.0f, 0.0f, 1.0f,
+     0.2f, 0.75f, 0.0f, 1.0f,
+     -0.14f, 0.94f, 0.0f, 1.0f,
+     -0.16f, 0.53f, 0.0f, 1.0f,
+     -0.45f, 0.77f, 0.0f, 1.0f,
+     -0.45f, 0.22f, 0.0f, 1.0f,
+     -0.72f, 0.51f, 0.0f, 1.0f,
+     -0.68f, -0.19f, 0.0f, 1.0f,
+     -0.91f, 0.15f, 0.0f, 1.0f,
+     -0.97f, -0.11f, 0.0f, 1.0f,
+     -0.72f, -0.58f, 0.0f, 1.0f,
+     -1.0f, -0.51f, 0.0f, 1.0f,
+     -0.89f, -1.0f, 0.0f, 1.0f
+    };
+
+    GLfloat model_coefficients_right[] = {
+     1.0f, 0.72f, 0.0f, 1.0f,
+     0.75f, 0.95f, 0.0f, 1.0f,
+     0.56f, 0.82f, 0.0f, 1.0f,
+     0.31f, 1.0f, 0.0f, 1.0f,
+     0.2f, 0.75f, 0.0f, 1.0f,
+     -0.14f, 0.94f, 0.0f, 1.0f,
+     -0.16f, 0.53f, 0.0f, 1.0f,
+     -0.45f, 0.77f, 0.0f, 1.0f,
+     -0.45f, 0.22f, 0.0f, 1.0f,
+     -0.72f, 0.51f, 0.0f, 1.0f,
+     -0.68f, -0.19f, 0.0f, 1.0f,
+     -0.91f, 0.15f, 0.0f, 1.0f,
+     -0.97f, -0.11f, 0.0f, 1.0f,
+     -0.72f, -0.58f, 0.0f, 1.0f,
+     -1.0f, -0.51f, 0.0f, 1.0f,
+     -0.89f, -1.0f, 0.0f, 1.0f
     };
 
     GLfloat color_coefficients[] = {
@@ -1739,20 +1766,43 @@ void BuildAim()
         1.0f, 0.5f, 0.0f, // cor do vértice 0
         1.0f, 0.5f, 0.0f, // cor do vértice 1
         1.0f, 0.5f, 0.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
+        1.0f, 0.5f, 0.0f, // cor do vértice 1
     };
 
     GLuint indices[] = {
-    // Definimos os índices dos vértices que definem as FACES de um cubo
-    // através de 12 triângulos que serão desenhados com o modo de renderização
-    // GL_TRIANGLES.
-        0, 1, 2, // triângulo 1
-        3, 4, 5, // triângulo 1
+        0, 1, 2,
+        1, 3, 2,
+        2, 3, 4,
+        3, 5, 4,
+        4, 5, 6,
+        5, 7, 6,
+        6, 7, 8,
+        7, 9, 8,
+        8, 9, 10,
+        9, 11, 10,
+        10, 11, 12,
+        11, 13, 12,
+        12, 13, 14,
+        13, 15, 14,
     };
 
-    int n = sizeof(model_coefficients) / sizeof(model_coefficients[0]);
+    int n = sizeof(model_coefficients_left) / sizeof(model_coefficients_left[0]);
 
-	std::vector<GLfloat> modelvec(model_coefficients, model_coefficients + n);
+	std::vector<GLfloat> modelvecLeft(model_coefficients_left, model_coefficients_left + n);
+
+	n = sizeof(model_coefficients_right) / sizeof(model_coefficients_right[0]);
+
+	std::vector<GLfloat> modelvecRight(model_coefficients_right, model_coefficients_right + n);
 
     n = sizeof(color_coefficients) / sizeof(color_coefficients[0]);
 
@@ -1762,9 +1812,9 @@ void BuildAim()
 
 	std::vector<GLuint> indicesvec(indices, indices + n);
 
-    BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
+    BuildTrianglesAndAddToVirtualScene2("aimLeft", &indicesvec, &modelvecLeft, &colorvec, GL_TRIANGLES);
 
-    BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvec, &colorvec, GL_TRIANGLES);
+    BuildTrianglesAndAddToVirtualScene2("aimRight", &indicesvec, &modelvecRight, &colorvec, GL_TRIANGLES);
 }
 
 void BuildCube()
