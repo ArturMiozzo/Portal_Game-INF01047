@@ -30,6 +30,8 @@ uniform mat4 projection;
 #define AIMRIGHT  7
 #define COMPANION_CUBE 8
 #define BUTTON 9
+#define LAVA 10
+#define GATE 11
 
 uniform int object_id;
 
@@ -47,6 +49,8 @@ uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
 uniform sampler2D TextureCompanionCube;
 uniform sampler2D TextureButton;
+uniform sampler2D TextureLava;
+uniform sampler2D TextureGate;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -211,6 +215,33 @@ void main()
     {
         Kd0 = vec3(1.0f, 0.5f, 0.0f);
     }
+    else if(object_id == LAVA)
+    {
+
+        U = texcoords.x*2 - floor(texcoords.x*2);
+        V = texcoords.y*2 - floor(texcoords.y*2);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TextureLava, vec2(U,V)).rgb;
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
+    }
+    else if(object_id == GATE)
+    {
+
+        U = texcoords.x - floor(texcoords.x);
+        V = texcoords.y - floor(texcoords.y);
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd0 = texture(TextureGate, vec2(U,V)).rgb;
+        Kd = vec3(1.0,1.0,1.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.1,0.1,0.1);
+        q = 32.0;
+    }
+
 
     // Espectro da fonte de iluminação
     vec3 I = vec3(1.0,1.0,1.0);

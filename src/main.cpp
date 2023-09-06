@@ -42,6 +42,7 @@
 # define CIRCLE_SIDES  (CIRCLE_VERTEX+2)
 
 # define PortalAnimationSpeed 15.0
+# define GateAnimationSpeed 1.5
 
 #define FLOOR 0
 #define WALL  1
@@ -53,6 +54,8 @@
 #define AIMRIGHT  7
 #define COMPANION_CUBE 8
 #define BUTTON 9
+#define LAVA 10
+#define GATE 11
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -211,6 +214,8 @@ bool Portal2OnCube = false;
 bbox Portal2Bbox;
 double lastPortal1Time = 0;
 double lastPortal2Time = 0;
+double openGateTime = 0;
+bool openDoor = false;
 
 glm::vec3 cubePositionOrigin = glm::vec3(0.0f, height/2, -25.0f);
 glm::vec3 cubePosition = cubePositionOrigin;
@@ -366,6 +371,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/portal_orange.jpg");      // TextureImage2
     LoadTextureImage("../../data/metal_box.png");
     LoadTextureImage("../../data/Button.bmp");
+    LoadTextureImage("../../data/lava-texture.jpg");
+    LoadTextureImage("../../data/gate.jpg");
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -425,6 +432,9 @@ int main(int argc, char* argv[])
     float t_prev = glfwGetTime();
     float t_step;
 
+    box_position = glm::vec4(+40.0f, -height/2 + 1.25, -30.0f, 1.0f);
+    glm::vec4 button_position = glm::vec4(+40.0f, -height/2 + 1, +30.0f, 1.0f);
+
     std::vector<bbox> collisionList;
     std::vector<bbox> portalList;
 
@@ -468,6 +478,21 @@ int main(int argc, char* argv[])
     holeOut.bbox_max = glm::vec4(width+1, height, spaceDistance, 0);
     holeOut.angle = boxAngle(holeOut.bbox_min, holeOut.bbox_max);
 
+    bbox cube;
+    cube.bbox_min = glm::vec4(box_position.x-1.2, 0, box_position.z-1.2, 0);
+    cube.bbox_max = glm::vec4(box_position.x+1.2, height, box_position.z+1.2, 0);
+    cube.angle = 0;
+
+    bbox button;
+    button.bbox_min = glm::vec4(button_position.x-2, 0, button_position.z-2, 0);
+    button.bbox_max = glm::vec4(button_position.x+2, height, button_position.z+2, 0);
+    button.angle = 0;
+
+    bbox gate;
+    gate.bbox_min = glm::vec4(-2.5, 0, -width-2, 0);
+    gate.bbox_max = glm::vec4(2.5, height, -width+2, 0);
+    gate.angle = boxAngle(wall1.bbox_min, wall1.bbox_max);
+
     collisionList.push_back(wall1);
     collisionList.push_back(wall2);
     collisionList.push_back(wall3);
@@ -476,13 +501,12 @@ int main(int argc, char* argv[])
     collisionList.push_back(wall6);
     collisionList.push_back(holeIn);
     collisionList.push_back(holeOut);
+    collisionList.push_back(cube);
+    collisionList.push_back(button);
 
-    //portalList.push_back(wall1);
     portalList.push_back(wall2);
     portalList.push_back(wall3);
     portalList.push_back(wall4);
-    //portalList.push_back(wall5);
-    //portalList.push_back(wall6);
 
     std::vector<glm::vec3> bezierCurvePoints;
 
@@ -496,14 +520,6 @@ int main(int argc, char* argv[])
     float t_bezier;
     float t_bezier_last;
     bool isBackwards = false;
-
-    box_position = glm::vec4(+40.0f, -height/2 + 1.25, -30.0f, 1.0f);
-    glm::vec4 button_position = glm::vec4(+40.0f, -height/2 + 1, +30.0f, 1.0f);
-
-    /*for(float i=0.0; i<=1.0; i+=0.1)
-    {
-        PrintVector3(bezierCurve(bezierCurvePoints, i));
-    }*/
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); //deixa o cursor invisivel
     while (!glfwWindowShouldClose(window))
@@ -767,7 +783,6 @@ int main(int argc, char* argv[])
             }
         }
 
-
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
 
@@ -842,6 +857,13 @@ int main(int argc, char* argv[])
                 box_position = button_position;
                 box_position.y +=1.25;
                 box_position.z +=0.8;
+
+                openDoor = true;
+                openGateTime = time;
+
+                portalList.push_back(wall1);
+                portalList.push_back(wall5);
+                portalList.push_back(wall6);
             }
         }
 
@@ -860,12 +882,30 @@ int main(int argc, char* argv[])
 
         model = Matrix_Translate(0.0f,-5*height/2,0.0f) * Matrix_Scale(width, height/2, spaceDistance);// * Matrix_Scale(20.0f, 20.0f, 20.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FLOOR);
+        glUniform1i(g_object_id_uniform, LAVA);
         DrawVirtualObject("the_floor");
 
-        model = Matrix_Translate(0.0f,height/2,-width) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        model = Matrix_Translate(-(width/2)-2.5,height/2,-width) * Matrix_Scale((width/2)-2.5, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        model = Matrix_Translate((width/2)+2.5,height/2,-width) * Matrix_Scale((width/2)-2.5, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, WALL);
+        DrawVirtualObject("the_wall");
+
+        float gateYPos;
+
+        if(openDoor)
+            gateYPos = height/2 + std::min((time - openGateTime)*GateAnimationSpeed, (double)height*2.0);
+        else
+            gateYPos = height/2;
+
+
+        model = Matrix_Translate(0, gateYPos,-width) * Matrix_Scale(5, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, GATE);
         DrawVirtualObject("the_wall");
 
         model = Matrix_Translate(0.0f,-3*height/2,-spaceDistance) * Matrix_Scale(width, height, 0) * Matrix_Rotate(3.141592f / 2.0f, glm::vec4(1.0f,0.0f,0.0f,0.0f));
@@ -928,7 +968,9 @@ int main(int argc, char* argv[])
         }
         else bezier_point = bezierCurve(bezierCurvePoints, t_bezier);
         //PrintVector(camera_position_c);
-        std::cout << isNear(camera_position_c, box_position) << std::endl;
+        if(isNear(camera_position_c, box_position) && !isHolding)
+            TextRendering_PrintString(window, "Pressione E para pegar", -0.25, -0.25, 3.0f);
+
         cubePosition.x=cubePositionOrigin.x+(bezier_point.x*width);
         cubePosition.y=cubePositionOrigin.y+(bezier_point.y*height);
         cubePosition.z=cubePositionOrigin.z+(bezier_point.z*width);
@@ -1097,16 +1139,28 @@ int main(int argc, char* argv[])
 
         if(blockMove) camera_position_c = lastCameraPos;
 
+        float lineheight = TextRendering_LineHeight(window);
+        float charwidth = TextRendering_CharWidth(window);
+
+        TextRendering_PrintString(window, "Coloque o cubo no botao vermelho para avancar", -0.75, 0.75, 3.0f);
+        TextRendering_PrintString(window, "Use os cliques do mouse para abrir portais", -0.7, 0.70-lineheight, 3.0f);
+
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
+        //TextRendering_ShowEulerAngles(window);
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
+        //TextRendering_ShowProjection(window);
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
+
+        if(openDoor && detectColision(camera_position_c, gate.bbox_min, gate.bbox_max))
+        {
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            TextRendering_PrintString(window, "OBRIGADO POR JOGAR", -0.27, -0.02, 3.0f);
+        }
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1122,6 +1176,8 @@ int main(int argc, char* argv[])
         // pela biblioteca GLFW.
         glfwPollEvents();
     }
+
+
 
     // Finalizamos o uso dos recursos do sistema operacional
     glfwTerminate();
@@ -1365,6 +1421,9 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TexturePortalOrange"), 5);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureCompanionCube"), 6);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureButton"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureLava"), 8);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureGate"), 9);
+
     glUseProgram(0);
 }
 void LoadGouraudShadersFromFiles()

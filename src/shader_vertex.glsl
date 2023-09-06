@@ -24,6 +24,7 @@ uniform sampler2D TexturePortalBlue;
 uniform sampler2D TexturePortalOrange;
 uniform sampler2D TextureCompanionCube;
 uniform sampler2D TextureButton;
+uniform sampler2D TextureLava;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
@@ -45,6 +46,7 @@ out vec3 cor_v;
 #define AIMRIGHT  7
 #define COMPANION_CUBE 8
 #define BUTTON 9
+#define LAVA 10
 
 void main()
 {
