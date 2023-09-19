@@ -15,11 +15,11 @@ Implementação de um jogo inspirado na série Portal com framework OpenGL em C+
 
 ## Uso do chat GPT
 O chat GPT foi consultado, porém foi de pouca usabilidade visto que ele utilizava de funções que não podiam ser utilizadas, ou muitas vezes respondia coisas sem sentido.
-Caso a hitbox de um portal seja atingida e o outro tiver sido criado, a posição da camera é definida para logo a frente do portal, e o vetor view da camera é corrigido para a saida do portal.
 
 ## Processo de desenvolvimento
 #### Mecânica dos portais
 Os portais são criados projetando o vetor da camera em direção a algumas das paredes usando a hitbox de cada uma, assim que uma colisão é encontrada, o portal é gerado na posição X e Z, com Y fixo.
+Caso a hitbox de um portal seja atingida e o outro tiver sido criado, a posição da camera é definida para logo a frente do portal, e o vetor view da camera é corrigido para a saida do portal.
 #### Testes de Colisões
 Os testes de colisões foram utilizados para não permitir que a câmera saia da sala ou caia no buraco, que é um obstáculo do mapa. Além disso, os testes de colisões também foram utilizados para verificar se o disparo da portal gun acertou em alguma parede válida. Para isso, foram utilizados testes do tipo cubo-cubo e raio-cubo.
 #### Mapeamento de Texturas
